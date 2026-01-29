@@ -5,76 +5,77 @@ version: 1.0.0+1
 
 environment:
   sdk: '>=3.3.2 <4.0.0'
-  flutter: '3.32.5'
+  flutter: '>=3.32.5'
 
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: any
+  cupertino_icons: ^1.0.8
 
-  video_player: any
-  video_player_web: any
-  video_player_android: any
-  video_player_avfoundation: any
+  video_player: ^2.10.1
+  video_player_web: ^2.4.0
+  video_player_android: ^2.9.1
+  video_player_avfoundation: ^2.9.0
 
-  get: any
-  get_storage: any
-  dio: any
-  path: any
-  floor: any
-  jiffy: any
-  crypto: any
-  encrypt: any
-  keframe: any
-  charset: any
-  wakelock_plus: any
-  audio_wave: any
-  share_plus: any
-  photo_view: any
-  file_picker: any
-  url_launcher: any
-  image_picker: any
-  easy_refresh: any
-  infinite_scroll_pagination: ^4.0.0
-  toggle_switch: any
-  vivysub_utils: any
-  path_provider: any
-  in_app_review: any
-  audio_service: any
-  code_text_field: any
-  adaptive_dialog: any
-  dismissible_page: any
-  pull_down_button: any
-  device_info_plus: any
-  flex_color_scheme: any
-  package_info_plus: any
-  permission_handler: any
-  modal_bottom_sheet: any
-  image_gallery_saver: any
-  font_awesome_flutter: any
-  cached_network_image: any
-  subtitle_wrapper_package: any
-  syncfusion_flutter_pdfviewer: any
-  flutter_svg: any
-  flutter_phoenix: any
-  flutter_slidable: any
-  flutter_screenutil: any
-  flutter_smart_dialog: any
-  flutter_inappwebview: any
-  flutter_native_splash: any
-  flutter_keyboard_visibility: any
+  get: ^4.7.3
+  get_storage: ^2.1.1
+  dio: ^5.9.1
+  path: ^1.9.1
+  floor: ^1.5.0
+  jiffy: ^6.3.2
+  crypto: ^3.0.7
+  encrypt: ^5.0.3
+  keframe: ^3.0.0
+  charset: ^2.0.1
+  wakelock_plus: ^1.4.0
+  audio_wave: ^0.1.5
+  share_plus: ^12.0.1
+  photo_view: ^0.15.0
+  file_picker: ^10.3.10
+  url_launcher: ^6.3.2
+  image_picker: ^1.2.1
+  easy_refresh: ^3.4.0
+  infinite_scroll_pagination: ^4.1.0
+  toggle_switch: ^2.3.0
+  vivysub_utils: ^0.0.7
+  path_provider: ^2.1.5
+  in_app_review: ^2.0.11
+  audio_service: ^0.18.18
+  code_text_field: ^1.1.0
+  adaptive_dialog: ^2.4.2
+  dismissible_page: ^1.0.2
+  pull_down_button: ^0.10.2
+  device_info_plus: ^12.3.0
+  flex_color_scheme: ^8.4.0
+  package_info_plus: ^9.0.0
+  permission_handler: ^12.0.1
+  modal_bottom_sheet: ^3.0.0
+  image_gallery_saver_plus: ^4.0.1
+  font_awesome_flutter: ^10.12.0
+  cached_network_image: ^3.3.1
+  subtitle_wrapper_package: ^2.2.0
+  syncfusion_flutter_pdfviewer: ^32.1.25
+  flutter_svg: ^1.1.6
+  flutter_phoenix: ^1.1.1
+  flutter_slidable: ^4.0.3
+  flutter_screenutil: ^5.9.3
+  flutter_smart_dialog: ^4.9.8
+  flutter_inappwebview: ^6.1.5
+  flutter_native_splash: ^2.4.7
+  flutter_keyboard_visibility: ^6.0.0
+  json_annotation: ^4.9.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_gen: any
-  flutter_lints: any
-  floor_generator: any
-  flutter_launcher_icons: any
-  change_app_package_name: any
-  build_runner: any
-  json_model: any
-  json_serializable: any
+  flutter_gen: ^5.9.0
+  flutter_lints: ^6.0.0
+  floor_generator: ^1.5.0
+  flutter_launcher_icons: ^0.14.4
+  change_app_package_name: ^1.5.0
+  build_runner: ^2.4.13
+  json_model: ^1.0.0
+  json_serializable: ^6.8.0
 
 flutter_native_splash:
   color: "#FFFFFF"

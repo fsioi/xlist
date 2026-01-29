@@ -1,7 +1,7 @@
 import java.util.Properties
 
 buildscript {
-    val kotlin_version by extra("1.9.23")
+    val kotlin_version by extra("2.0.0")
     repositories {
         google()
         mavenCentral()
@@ -21,8 +21,8 @@ plugins {
 android {
     namespace = "com.example.xlist"
     
-    compileSdk = 35
-    ndkVersion = "27.0.12077973"
+    compileSdk = 36
+    ndkVersion = "27.3.13750724"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -35,7 +35,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.xlist"
-        minSdk = 21 // 确保 minSdk 至少为 21
+        minSdk = flutter.minSdkVersion // 确保 minSdk 至少为 21
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -72,7 +72,8 @@ android {
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("release")
+            // 暂时禁用签名配置，用于测试构建
+            // signingConfig = signingConfigs.getByName("release")
         }
     }
 }

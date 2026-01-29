@@ -11,7 +11,8 @@ UserModel _$UserModelFromJson(Map<String, dynamic> json) => UserModel()
   ..username = json['username'] as String?
   ..password = json['password'] as String?
   ..basePath = json['basePath'] as String?
-  ..role = $enumDecodeNullable(_$UserRoleEnumMap, json['role']);
+  ..role = $enumDecodeNullable(_$UserRoleEnumMap, json['role'])
+  ..permission = (json['permission'] as num?)?.toInt();
 
 Map<String, dynamic> _$UserModelToJson(UserModel instance) => <String, dynamic>{
       'id': instance.id,
@@ -19,6 +20,7 @@ Map<String, dynamic> _$UserModelToJson(UserModel instance) => <String, dynamic>{
       'password': instance.password,
       'basePath': instance.basePath,
       'role': _$UserRoleEnumMap[instance.role],
+      'permission': instance.permission,
     };
 
 const _$UserRoleEnumMap = {
