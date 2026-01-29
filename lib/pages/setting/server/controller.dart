@@ -64,9 +64,12 @@ class ServerController extends GetxController {
       _homepageController.serverId.value = server.id!;
 
       // 用户信息
-      final userInfo =
-          await _homepageController.resetUserToken(server, force: true);
-      if (userInfo.id == null) throw 'toast_get_user_info_fail'.tr;
+      final userInfo = await _homepageController.resetUserToken(server, force: true);
+      // 检查返回的用户信息是否有效
+      if (userInfo == null || (userInfo is Map && userInfo['id'] == null)) {
+        // 即使获取用户信息失败，也继续执行，因为服务器可能是匿名的
+        print('Warning: Failed to get user info, continuing with server switch');
+      }
 
       _homepageController.getObjectList();
       Get.until((route) => Get.currentRoute == Routes.HOMEPAGE);

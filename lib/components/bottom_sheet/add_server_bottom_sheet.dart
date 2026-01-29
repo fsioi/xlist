@@ -186,8 +186,18 @@ class _AddServerBottomSheetState extends State<AddServerBottomSheet> {
         password: password,
       );
     } catch (e) {
-      final error = e.toString().replaceAll('DioError ', '');
-      SmartDialog.showToast(error);
+      String errorMessage;
+      if (e.toString().contains('401')) {
+        // 认证失败，显示更友好的错误消息
+        errorMessage = '认证失败，请检查用户名和密码';
+      } else if (e.toString().contains('SocketException') || e.toString().contains('Connection refused')) {
+        // 连接失败，显示更友好的错误消息
+        errorMessage = '连接失败，请检查服务器地址是否正确';
+      } else {
+        // 其他错误，显示简洁的错误消息
+        errorMessage = '测试失败，请检查服务器信息';
+      }
+      SmartDialog.showToast(errorMessage);
       _isUrlValid = false;
     }
 

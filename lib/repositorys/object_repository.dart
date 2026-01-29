@@ -17,6 +17,10 @@ class ObjectRepository extends Repository {
     int retry = 0,
   }) async {
     final url = Get.find<UserStorage>().serverUrl.value;
+    if (url.isEmpty) {
+      print('Error getting object: Server URL is empty');
+      throw Exception('Server URL is empty');
+    }
     final response = await Repository.post(
       '${url}/api/fs/get',
       data: {
@@ -57,19 +61,28 @@ class ObjectRepository extends Repository {
     String password = '',
     bool refresh = false,
   }) async {
-    final url = Get.find<UserStorage>().serverUrl.value;
-    final response = await Repository.post(
-      '${url}/api/fs/list',
-      data: {
-        'path': path,
-        'page': page,
-        'per_page': pageSize,
-        'password': password,
-        'refresh': refresh,
-      },
-    );
+    try {
+      final url = Get.find<UserStorage>().serverUrl.value;
+      if (url.isEmpty) {
+        print('Error getting object list: Server URL is empty');
+        return null;
+      }
+      final response = await Repository.post(
+        '${url}/api/fs/list',
+        data: {
+          'path': path,
+          'page': page,
+          'per_page': pageSize,
+          'password': password,
+          'refresh': refresh,
+        },
+      );
 
-    return response.data;
+      return response.data;
+    } catch (e) {
+      print('Error in ObjectRepository.getList: $e');
+      return null;
+    }
   }
 
   /// 重命名
@@ -80,6 +93,10 @@ class ObjectRepository extends Repository {
     required String name,
   }) async {
     final url = Get.find<UserStorage>().serverUrl.value;
+    if (url.isEmpty) {
+      print('Error renaming object: Server URL is empty');
+      return null;
+    }
     final response = await Repository.post(
       '${url}/api/fs/rename',
       data: {'path': path, 'name': name},
@@ -98,6 +115,10 @@ class ObjectRepository extends Repository {
     required String name,
   }) async {
     final url = Get.find<UserStorage>().serverUrl.value;
+    if (url.isEmpty) {
+      print('Error moving object: Server URL is empty');
+      return null;
+    }
     final response = await Repository.post(
       '${url}/api/fs/move',
       data: {
@@ -120,6 +141,10 @@ class ObjectRepository extends Repository {
     required String name,
   }) async {
     final url = Get.find<UserStorage>().serverUrl.value;
+    if (url.isEmpty) {
+      print('Error copying object: Server URL is empty');
+      return null;
+    }
     final response = await Repository.post(
       '${url}/api/fs/copy',
       data: {
@@ -140,6 +165,10 @@ class ObjectRepository extends Repository {
     required String name,
   }) async {
     final url = Get.find<UserStorage>().serverUrl.value;
+    if (url.isEmpty) {
+      print('Error removing object: Server URL is empty');
+      return null;
+    }
     final response = await Repository.post(
       '${url}/api/fs/remove',
       data: {
@@ -157,6 +186,10 @@ class ObjectRepository extends Repository {
     required String path,
   }) async {
     final url = Get.find<UserStorage>().serverUrl.value;
+    if (url.isEmpty) {
+      print('Error creating directory: Server URL is empty');
+      return null;
+    }
     final response = await Repository.post(
       '${url}/api/fs/mkdir',
       data: {'path': path},
@@ -173,6 +206,10 @@ class ObjectRepository extends Repository {
     String password = '',
   }) async {
     final url = Get.find<UserStorage>().serverUrl.value;
+    if (url.isEmpty) {
+      print('Error uploading file: Server URL is empty');
+      return null;
+    }
     final response = await DioService.to.dio.put(
       '${url}/api/fs/put',
       options: Options(
@@ -196,6 +233,10 @@ class ObjectRepository extends Repository {
     bool force_root = false,
   }) async {
     final url = Get.find<UserStorage>().serverUrl.value;
+    if (url.isEmpty) {
+      print('Error getting directories: Server URL is empty');
+      return null;
+    }
     final response = await Repository.post(
       '${url}/api/fs/dirs',
       data: {
@@ -217,6 +258,10 @@ class ObjectRepository extends Repository {
     required String password,
   }) async {
     final url = Get.find<UserStorage>().serverUrl.value;
+    if (url.isEmpty) {
+      print('Error searching objects: Server URL is empty');
+      return [];
+    }
     final response = await Repository.post(
       '${url}/api/fs/search',
       data: {

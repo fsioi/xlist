@@ -3,7 +3,9 @@ export 'search_component.dart';
 
 
 export 'object_list/object_list_component.dart';
+export 'object_list/object_list_item.dart';
 export 'object_grid/object_grid_component.dart';
+export 'object_grid/object_grid_item.dart';
 
 export 'bottom_sheet/more_bottom_sheet.dart';
 export 'bottom_sheet/add_server_bottom_sheet.dart';

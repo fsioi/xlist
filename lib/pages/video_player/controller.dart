@@ -92,8 +92,10 @@ class VideoPlayerController extends SuperController {
     if (file.isEmpty) {
       try {
         object.value = await ObjectRepository.get(path: '${path}${name}');
-        httpHeaders.value = await DriverHelper.getHeaders(
-            object.value.provider, object.value.rawUrl);
+        if (object.value.provider != null && object.value.rawUrl != null) {
+          httpHeaders.value = await DriverHelper.getHeaders(
+              object.value.provider, object.value.rawUrl);
+        }
       } catch (e) {
         SmartDialog.showToast('toast_get_object_fail'.tr);
         return;
@@ -122,8 +124,14 @@ class VideoPlayerController extends SuperController {
 
     await updateProgress();
 
+    // 检查 rawUrl 是否为空
+    if (object.value.rawUrl == null || object.value.rawUrl!.isEmpty) {
+      SmartDialog.showToast('toast_get_object_fail'.tr);
+      return;
+    }
+
     player = vp.VideoPlayerController.networkUrl(
-      Uri.parse(object.value.rawUrl ?? ''),
+      Uri.parse(object.value.rawUrl!),
       httpHeaders: httpHeaders.cast<String, String>(),
     );
     await player.initialize();

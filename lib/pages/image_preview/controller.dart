@@ -46,23 +46,39 @@ class ImagePreviewController extends GetxController {
 
     // 过滤非图片
     objects = objects.where((o) => PreviewHelper.isImage(o.name!)).toList();
-    userInfo.value = await UserRepository.me(); // 获取用户信息
+    userInfo.value = await UserRepository.me();
 
     // 初始化图片控制器
     currentIndex.value = objects.indexWhere((e) => e.name == name);
     pageController = PageController(initialPage: currentIndex.value);
 
-    // 获取头信息
-    final object = await ObjectRepository.get(path: '${path}${name}');
-    imageHeaders.value =
-        await DriverHelper.getHeaders(object.provider!, object.rawUrl!);
+    // 获取对象信息
+    ObjectModel object;
+    try {
+      object = await ObjectRepository.get(path: '${path}${name}');
+    } catch (e) {
+      print('Error getting object: $e');
+      return;
+    }
 
-    // 获取图片链接, 115 hack
-    if (object.provider!.startsWith(Provider.Cloud115)) {
+    // 获取请求头
+    if (object.provider != null && object.rawUrl != null) {
+      imageHeaders.value =
+          await DriverHelper.getHeaders(object.provider!, object.rawUrl!);
+    }
+
+    // 获取图片链接，对于115云盘使用rawUrl，其他使用getDownloadLink
+    if (object.provider != null && object.provider!.startsWith(Provider.Cloud115)) {
       for (var i = 0; i < objects.length; i++) {
-        final _response =
-            await ObjectRepository.get(path: '${path}${objects[i].name}');
-        imageUrls.add(_response.rawUrl!);
+        try {
+          final _response =
+              await ObjectRepository.get(path: '${path}${objects[i].name}');
+          if (_response.rawUrl != null) {
+            imageUrls.add(_response.rawUrl!);
+          }
+        } catch (e) {
+          print('Error getting image URL for ${objects[i].name}: $e');
+        }
       }
     } else {
       imageUrls.value = objects.map((o) {
@@ -78,7 +94,9 @@ class ImagePreviewController extends GetxController {
     await CommonUtils.addRecent(object, path, name);
 
     // 添加当前图片
-    if (imageUrls.isEmpty) imageUrls.add(object.rawUrl!);
+    if (imageUrls.isEmpty && object.rawUrl != null) {
+      imageUrls.add(object.rawUrl!);
+    }
   }
 
   /// 页面切换
