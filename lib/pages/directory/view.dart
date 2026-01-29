@@ -214,54 +214,60 @@ class DirectoryPage extends GetView<DirectoryController> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: _buildNavigationBar(),
-      body: SafeArea(
-        child: EasyRefresh(
-          controller: controller.easyRefreshController,
-          header: CupertinoHeader(
-              position: IndicatorPosition.locator, safeArea: false),
-          footer: CupertinoFooter(position: IndicatorPosition.locator),
-          onRefresh: () async {
-            await HapticFeedback.selectionClick();
-            await controller.getDirectoryList();
-            controller.easyRefreshController.finishRefresh();
-            controller.easyRefreshController.resetFooter();
-          },
-          child: _buildCustomScrollView(),
-        ),
-      ),
-      bottomNavigationBar: SafeArea(
-        child: Container(
-          height: CommonUtils.isPad ? 80 : 130.h,
-          decoration: BoxDecoration(
-            border: Border(
-              top: BorderSide(width: 1.r, color: Get.theme.dividerColor),
+    return CupertinoPageScaffold(
+      navigationBar: _buildNavigationBar(),
+      backgroundColor: Get.theme.scaffoldBackgroundColor,
+      child: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: EasyRefresh(
+                controller: controller.easyRefreshController,
+                header: CupertinoHeader(
+                    position: IndicatorPosition.locator, safeArea: false),
+                footer: CupertinoFooter(position: IndicatorPosition.locator),
+                onRefresh: () async {
+                  await HapticFeedback.selectionClick();
+                  await controller.getDirectoryList();
+                  controller.easyRefreshController.finishRefresh();
+                  controller.easyRefreshController.resetFooter();
+                },
+                child: _buildCustomScrollView(),
+              ),
             ),
-          ),
-          padding: EdgeInsets.symmetric(horizontal: 50.r, vertical: 30.r),
-          child: Row(
-            children: [
-              Icon(
-                FileType.getIcon(
-                  controller.srcObject.type ?? 0,
-                  controller.srcObject.name ?? '',
-                ),
-                size: CommonUtils.isPad ? 60 : 100.sp,
-                color: Get.theme.primaryColor,
-              ),
-              SizedBox(width: 20.w),
+            if (controller.srcObject.name != null && controller.srcObject.name!.isNotEmpty)
               Container(
-                width: 860.w,
-                child: Text(
-                  controller.srcObject.name ?? '',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Get.textTheme.titleMedium,
+                height: CommonUtils.isPad ? 80 : 130.h,
+                decoration: BoxDecoration(
+                  border: Border(
+                    top: BorderSide(width: 1.r, color: Get.theme.dividerColor),
+                  ),
+                ),
+                padding: EdgeInsets.symmetric(horizontal: 50.r, vertical: 30.r),
+                child: Row(
+                  children: [
+                    Icon(
+                      FileType.getIcon(
+                        controller.srcObject.type ?? 0,
+                        controller.srcObject.name ?? '',
+                      ),
+                      size: CommonUtils.isPad ? 60 : 100.sp,
+                      color: Get.theme.primaryColor,
+                    ),
+                    SizedBox(width: 20.w),
+                    Container(
+                      width: 860.w,
+                      child: Text(
+                        controller.srcObject.name ?? '',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Get.textTheme.titleMedium,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
+          ],
         ),
       ),
     );

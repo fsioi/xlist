@@ -54,34 +54,32 @@ class AboutPage extends GetView<AboutController> {
 
   /// 信息
   Widget _buildInfo() {
-    return Obx(
-      () => CupertinoListSection.insetGrouped(
-        backgroundColor: CommonUtils.backgroundColor,
-        dividerMargin: 20,
-        additionalDividerMargin: 30,
-        children: [
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onDoubleTap: () {
-              controller.showVersion.toggle();
-            },
-            child: _buildListTile(
-              title: 'version'.tr,
-              icon: Icons.info_outline_rounded,
-              additionalInfo: 'v${controller.version.value}',
-              trailing: null,
-            ),
+    return CupertinoListSection.insetGrouped(
+      backgroundColor: CommonUtils.backgroundColor,
+      dividerMargin: 20,
+      additionalDividerMargin: 30,
+      children: [
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onDoubleTap: () {
+            controller.showVersion.toggle();
+          },
+          child: _buildListTile(
+            title: 'version'.tr,
+            icon: Icons.info_outline_rounded,
+            additionalInfo: 'v${controller.version.value}',
+            trailing: null,
           ),
-          _buildListTile(
-            title: 'GitHub',
-            icon: Icons.code_rounded,
-            additionalInfo: 'xlist-io/xlist',
-            onTap: () => BrowserService.to.open(
-              'https://github.com/xlist-io/xlist',
-            ),
+        ),
+        _buildListTile(
+          title: 'GitHub',
+          icon: Icons.code_rounded,
+          additionalInfo: 'xlist-io/xlist',
+          onTap: () => BrowserService.to.open(
+            'https://github.com/xlist-io/xlist',
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -105,33 +103,37 @@ class AboutPage extends GetView<AboutController> {
     return CupertinoPageScaffold(
       navigationBar: _buildNavigationBar(),
       backgroundColor: CommonUtils.backgroundColor,
-      child: OrientationBuilder(
-        builder: (context, orientation) {
-          if (orientation == Orientation.portrait) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                SizedBox(height: 100.h),
-                Center(
-                    child: Assets.common.logoTransparent.image(width: 600.w)),
-                _buildInfo(),
-                Expanded(child: Container()),
-                Obx(() => _buildCopyRight()),
-              ],
-            );
-          } else {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Center(
-                    child: Assets.common.logoTransparent.image(width: 300.w)),
-                _buildInfo(),
-                Expanded(child: Container()),
-                Obx(() => _buildCopyRight()),
-              ],
-            );
-          }
-        },
+      child: SafeArea(
+        child: SingleChildScrollView(
+          child: OrientationBuilder(
+            builder: (context, orientation) {
+              if (orientation == Orientation.portrait) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    SizedBox(height: 100.h),
+                    Center(
+                        child: Assets.common.logoTransparent.image(width: 600.w)),
+                    _buildInfo(),
+                    SizedBox(height: 50.h),
+                    _buildCopyRight(),
+                  ],
+                );
+              } else {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Center(
+                        child: Assets.common.logoTransparent.image(width: 300.w)),
+                    _buildInfo(),
+                    SizedBox(height: 50.h),
+                    _buildCopyRight(),
+                  ],
+                );
+              }
+            },
+          ),
+        ),
       ),
     );
   }

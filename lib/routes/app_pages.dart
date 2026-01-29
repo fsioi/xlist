@@ -90,47 +90,47 @@ class AppPages {
       binding: SettingBinding(),
       children: [
         GetPage(
-          name: 'server',
+          name: '/server',
           page: () => ServerPage(),
           binding: ServerBinding(),
         ),
         GetPage(
-          name: 'download',
+          name: '/download',
           page: () => DownloadPage(),
           binding: DownloadBinding(),
         ),
         GetPage(
-          name: 'about',
+          name: '/about',
           page: () => AboutPage(),
           binding: AboutBinding(),
         ),
         GetPage(
-          name: 'recent',
+          name: '/recent',
           page: () => RecentPage(),
           binding: RecentBinding(),
         ),
         GetPage(
-          name: 'favorite',
+          name: '/favorite',
           page: () => FavoritePage(),
           binding: FavoriteBinding(),
         ),
         GetPage(
-          name: 'preview/image',
+          name: '/preview/image',
           page: () => SettingImagePage(),
           binding: SettingImageBinding(),
         ),
         GetPage(
-          name: 'preview/audio',
+          name: '/preview/audio',
           page: () => SettingAudioPage(),
           binding: SettingAudioBinding(),
         ),
         GetPage(
-          name: 'preview/video',
+          name: '/preview/video',
           page: () => SettingVideoPage(),
           binding: SettingVideoBinding(),
         ),
         GetPage(
-          name: 'preview/document',
+          name: '/preview/document',
           page: () => SettingDocumentPage(),
           binding: SettingDocumentBinding(),
         ),

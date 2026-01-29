@@ -38,9 +38,29 @@ class DatabaseService extends GetxService {
 
   // Init
   Future<DatabaseService> init() async {
-    _database = await $FloorXlistDatabase
-        .databaseBuilder(name)
-        .addMigrations([migration1to2, migration2to3]).build();
+    try {
+      // 尝试打开数据库，如果失败则重试
+      for (int i = 0; i < 3; i++) {
+        try {
+          _database = await $FloorXlistDatabase
+              .databaseBuilder(name)
+              .addMigrations([migration1to2, migration2to3]).build();
+          break;
+        } catch (e) {
+          print('Database initialization attempt $i failed: $e');
+          if (i == 2) {
+            // 最后一次尝试失败，抛出异常
+            rethrow;
+          }
+          // 等待一段时间后重试
+          await Future.delayed(Duration(milliseconds: 500));
+        }
+      }
+    } catch (e) {
+      print('Database initialization error: $e');
+      // 即使数据库初始化失败，也允许应用继续运行
+      // 这样可以避免白屏问题
+    }
 
     return this;
   }

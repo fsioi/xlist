@@ -170,6 +170,9 @@ class _AddServerBottomSheetState extends State<AddServerBottomSheet> {
         Get.find<UserStorage>().token.value = token;
         Get.find<UserStorage>().serverUrl.value = url;
 
+        // 设置DioService的baseUrl
+        Get.find<DioService>().setBaseUrl(url);
+
         // 获取用户信息
         final userInfo = await UserRepository.me();
         Get.find<UserStorage>().id.value = userInfo.id.toString();

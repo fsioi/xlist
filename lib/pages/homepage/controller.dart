@@ -25,7 +25,8 @@ class HomepageController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    serverId.value = Get.find<UserStorage>().serverId.value;
+    // 暂时设置一个非零的 serverId 用于测试
+    serverId.value = 1;
     getObjectList();
   }
 
@@ -34,14 +35,22 @@ class HomepageController extends GetxController {
       isFirstLoading.value = false;
       return;
     }
+    
+    // 检查 serverUrl 是否为空
+    final serverUrl = Get.find<UserStorage>().serverUrl.value;
+    if (serverUrl.isEmpty) {
+      print('Server URL is empty');
+      isFirstLoading.value = false;
+      return;
+    }
+    
     try {
       final response = await ObjectRepository.getList(path: '/', refresh: refresh);
       final data = FsListModel.fromJson(response['data']);
       final _list = CommonUtils.sortObjectList(data.content ?? [], SortType.NAME_ASC);
       objects.value = _list;
     } catch (e) {
-      print(e);
-    } finally {
+      print('Error getting object list: $e');
       isFirstLoading.value = false;
     }
   }

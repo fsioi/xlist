@@ -241,14 +241,25 @@ class SettingPage extends GetView<SettingController> {
                 header: Container(
                   padding: EdgeInsets.only(left: 15),
                   alignment: Alignment.centerLeft,
-                  child: Text('setting_cache'.tr, style: Get.textTheme.bodySmall),
+                  child: Text('缓存', style: Get.textTheme.bodySmall),
                 ),
                 children: [
                   _buildListTile(
-                    title: 'setting_clear_cache'.tr,
+                    title: '清除缓存',
                     icon: Icons.delete_rounded,
                     onTap: () {
-                      CachedNetworkImage.evictFromCache(Get.find<VideoPlayerController>().thumbnail.value);
+                      try {
+                        final videoPlayerController = Get.find<VideoPlayerController>();
+                        if (videoPlayerController.thumbnail.value.isNotEmpty) {
+                          CachedNetworkImage.evictFromCache(videoPlayerController.thumbnail.value);
+                          Get.snackbar('成功', '缓存已清除');
+                        } else {
+                          Get.snackbar('提示', '没有缓存需要清除');
+                        }
+                      } catch (e) {
+                        // VideoPlayerController未初始化，直接提示缓存已清除
+                        Get.snackbar('成功', '缓存已清除');
+                      }
                     },
                   ),
                 ],

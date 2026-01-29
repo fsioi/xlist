@@ -16,6 +16,11 @@ class DioService extends GetxService {
   Dio _dio = Dio();
   Dio get dio => _dio;
   Map<String, String> defaultHeaders = {}; // 默认请求头
+  
+  // 设置baseUrl
+  void setBaseUrl(String url) {
+    _dio.options.baseUrl = url;
+  }
 
   // 连接超时时间
   static const Duration CONNECT_TIMEOUT = Duration(seconds: 10 * 1000);

@@ -12,7 +12,8 @@ import 'package:xlist/services/database_service.dart';
 import 'package:xlist/services/device_info_service.dart';
 import 'package:xlist/services/dio_service.dart';
 import 'package:xlist/services/download_service.dart';
-import 'package:xlist/services/player_notification_service.dart';
+// 暂时移除 PlayerNotificationService 的导入，避免音频服务错误
+// import 'package:xlist/services/player_notification_service.dart';
 import 'package:xlist/storages/common_storage.dart';
 import 'package:xlist/storages/preferences_storage.dart';
 import 'package:xlist/storages/user_storage.dart'; // 添加 UserStorage 导入
@@ -46,7 +47,8 @@ class Global {
     await Get.putAsync(() => DatabaseService().init());
     await Get.putAsync(() => DownloadService().init());
     await Get.putAsync(() => DeviceInfoService().init());
-    await Get.putAsync(() => PlayerNotificationService().init()); // 取消注释
+    // 暂时注释掉 PlayerNotificationService 的初始化，避免音频服务错误
+    // await Get.putAsync(() => PlayerNotificationService().init());
 
 
     // Theme

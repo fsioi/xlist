@@ -7,7 +7,6 @@ abstract class Routes {
   static const NOTFOUND = _Paths.NOTFOUND;
 
   static const SPLASH = _Paths.SPLASH;
-  static const TEST = _Paths.TEST; // 添加 Test 路由
   static const HOMEPAGE = _Paths.HOMEPAGE;
   static const DETAIL = _Paths.DETAIL;
   static const SEARCH = _Paths.SEARCH;
@@ -35,7 +34,6 @@ abstract class Routes {
 abstract class _Paths {
   static const SPLASH = '/';
   static const NOTFOUND = '/notfound';
-  static const TEST = '/test'; // 添加 Test 路径
   static const HOMEPAGE = '/homepage';
   static const DETAIL = '/detail';
   static const SEARCH = '/search';
