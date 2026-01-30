@@ -22,7 +22,6 @@ android {
     namespace = "com.example.xlist"
     
     compileSdk = 36
-    ndkVersion = "27.3.13750724"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -35,10 +34,12 @@ android {
 
     defaultConfig {
         applicationId = "com.example.xlist"
-        minSdk = flutter.minSdkVersion // 确保 minSdk 至少为 21
+        minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        // ndkVersion = "27.3.13750724"
 
         javaCompileOptions {
             annotationProcessorOptions {

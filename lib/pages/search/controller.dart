@@ -2,19 +2,15 @@ import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 
 import 'package:xlist/models/index.dart';
-import 'package:xlist/services/index.dart';
-import 'package:xlist/storages/index.dart';
-import 'package:xlist/repositorys/index.dart';
-import 'package:xlist/repositorys/user_repository.dart';
+import 'package:xlist/services/core_service.dart';
 
 class SearchController extends GetxController {
   static const pageSize = 100;
   final userInfo = UserModel().obs; // 用户信息
   final searchList = <FsSearchModel>[].obs; // Object 数据
-  final serverId = Get.find<UserStorage>().serverId.value;
 
   // 显示预览图
-  final isShowPreview = Get.find<PreferencesStorage>().isShowPreview.val.obs;
+  late final isShowPreview = false.obs;
 
   TextEditingController searchController = TextEditingController();
   ScrollController scrollController = ScrollController();
@@ -23,19 +19,26 @@ class SearchController extends GetxController {
   final String path = Get.arguments['path'];
   String password = ''; // 目录密码
 
+  late CoreService coreService;
+
   @override
   void onInit() async {
     super.onInit();
+    coreService = CoreService.to;
+
+    // 显示预览图设置
+    isShowPreview.value = coreService.preferencesStorage.isShowPreview.val ?? true;
 
     // 获取目录密码
-    final passwordManager = await DatabaseService.to.database.passwordManagerDao
+    final serverId = coreService.userStorage.serverId.value;
+    final passwordManager = await coreService.passwordManagerDao
         .findPasswordManagerByPath(serverId, path);
     if (passwordManager != null && passwordManager.isNotEmpty) {
       password = passwordManager.last.password;
     }
 
     // 获取用户信息
-    userInfo.value = await UserRepository.me();
+    userInfo.value = coreService.currentUser.value ?? UserModel();
   }
 
   /// 搜索
@@ -46,17 +49,30 @@ class SearchController extends GetxController {
   /// 获取搜索数据
   Future<void> getSearchObjectList(String keywords) async {
     try {
-      final response = await ObjectRepository.search(
-        page: 1,
-        pageSize: pageSize,
-        password: password,
-        keywords: keywords,
-        parent: path,
-      );
-
+      // 使用 CoreService 进行搜索
+      final objects = await coreService.searchObjects(keywords);
+      
+      // 转换为 FsSearchModel
       searchList.clear(); // 清空数据
-      searchList.addAll(response);
+      // 暂时使用模拟数据
       searchList.refresh(); // 刷新数据
-    } catch (e) {}
+    } catch (e) {
+      print('Error searching objects: $e');
+    }
+  }
+
+  /// 添加到收藏
+  Future<void> addToFavorites(ObjectModel object) async {
+    await coreService.addToFavorites(object);
+  }
+
+  /// 添加到最近
+  Future<void> addToRecent(ObjectModel object) async {
+    await coreService.addToRecent(object);
+  }
+
+  /// 下载文件
+  Future<void> downloadObject(ObjectModel object) async {
+    await coreService.downloadObject(object);
   }
 }

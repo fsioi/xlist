@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import 'package:xlist/gen/index.dart';
@@ -30,32 +31,20 @@ class ServerPage extends GetView<ServerController> {
         alignment: Alignment.centerRight,
         child: Text('setting_server_new'.tr),
         onPressed: () async {
-          final result =
-              await BottomSheetHelper.showBottomSheet(AddServerBottomSheet());
+          try {
+            final result =
+                await BottomSheetHelper.showBottomSheet(AddServerBottomSheet());
 
-          if (result == null) return;
-          if (!(result is ServerEntity)) return;
+            if (result == null) return;
+            if (!(result is ServerEntity)) return;
 
-          // 重置首页信息
-          if (controller.serverList.isEmpty) {
-            Get.find<UserStorage>().serverId.value = result.id!;
-            Get.find<UserStorage>().serverUrl.value = result.url;
-
-            // 重置首页信息
-            final _homepageController = Get.find<HomepageController>();
-            _homepageController.serverId.value = result.id!;
-            await _homepageController.resetUserToken(result);
-            _homepageController.getObjectList();
-
-            // 重置设置页面信息
-            final _settingController = Get.find<SettingController>();
-            _settingController.serverId.value = result.id!;
-            _settingController.serverInfo.value = result;
-
-            // 重置服务器信息
-            controller.serverId.value = result.id!;
+            // 使用控制器的 addServer 方法处理服务器添加
+            await controller.addServer(result);
+          } catch (e) {
+            print('⚠ Error adding server: $e');
+            // 显示错误提示
+            SmartDialog.showToast('Failed to add server: ${e.toString()}');
           }
-          controller.getServerList();
         },
       ),
     );
@@ -171,9 +160,47 @@ class ServerPage extends GetView<ServerController> {
       navigationBar: _buildNavigationBar(),
       backgroundColor: CommonUtils.backgroundColor,
       child: Obx(
-        () => controller.isFirstLoading.isTrue
-            ? Center(child: CupertinoActivityIndicator())
-            : _buildListView(),
+        () {
+          // 显示加载状态
+          if (controller.isFirstLoading.isTrue) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CupertinoActivityIndicator(radius: 20),
+                  SizedBox(height: 20),
+                  Text('Loading servers...'),
+                ],
+              ),
+            );
+          }
+
+          // 显示错误状态
+          if (controller.errorMessage.isNotEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(CupertinoIcons.exclamationmark_circle, size: 48, color: Colors.red),
+                  SizedBox(height: 20),
+                  Text(
+                    controller.errorMessage.value,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.red),
+                  ),
+                  SizedBox(height: 20),
+                  CupertinoButton(
+                    child: Text('Try Again'),
+                    onPressed: () => controller.getServerList(),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          // 显示服务器列表
+          return _buildListView();
+        },
       ),
     );
   }

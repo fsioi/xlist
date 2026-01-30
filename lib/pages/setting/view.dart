@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 
 import 'package:xlist/common/index.dart';
 import 'package:xlist/storages/index.dart';
@@ -12,6 +13,7 @@ import 'package:xlist/routes/app_pages.dart';
 import 'package:xlist/pages/setting/index.dart';
 import 'package:xlist/pages/homepage/index.dart';
 import 'package:xlist/pages/video_player/controller.dart';
+import 'package:xlist/services/index.dart';
 
 class SettingPage extends GetView<SettingController> {
   const SettingPage({Key? key}) : super(key: key);
@@ -245,7 +247,22 @@ class SettingPage extends GetView<SettingController> {
                 ),
                 children: [
                   _buildListTile(
-                    title: '清除缓存',
+                    title: '清除图片视频缓存',
+                    icon: Icons.delete_rounded,
+                    onTap: () async {
+                      try {
+                        SmartDialog.showLoading();
+                        await ThumbnailCache().clearCache();
+                        SmartDialog.dismiss();
+                        Get.snackbar('成功', '缓存已清除');
+                      } catch (e) {
+                        SmartDialog.dismiss();
+                        Get.snackbar('错误', '清除缓存失败: $e');
+                      }
+                    },
+                  ),
+                  _buildListTile(
+                    title: '清除网络图片缓存',
                     icon: Icons.delete_rounded,
                     onTap: () {
                       try {

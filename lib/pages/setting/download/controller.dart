@@ -186,7 +186,12 @@ class DownloadController extends GetxController {
 
   @override
   void onClose() {
-    DownloadService.to.unbindBackgroundIsolate();
+    try {
+      // 尝试解绑进度监听
+      DownloadService.to.unbindBackgroundIsolate();
+    } catch (e) {
+      print('Error unbinding background isolate: $e');
+    }
     super.onClose();
   }
 }

@@ -13,30 +13,96 @@ import 'package:xlist/services/database_service.dart';
 class ServerController extends GetxController {
   final serverList = <ServerEntity>[].obs;
   final isFirstLoading = true.obs; // 是否是第一次加载
-  final serverId = Get.find<UserStorage>().serverId.value.obs;
-  final _homepageController = Get.find<HomepageController>();
-  final _settingController = Get.find<SettingController>();
+  final serverId = Rxn<int>();
+  final errorMessage = "".obs;
+  
+  // 延迟初始化依赖项
+  HomepageController? _homepageController;
+  SettingController? _settingController;
+  UserStorage? _userStorage;
 
   @override
   void onInit() async {
     super.onInit();
+    print('=== Initializing ServerController ===');
 
-    // 获取服务器信息
-    serverList.value =
-        await DatabaseService.to.database.serverDao.findAllServer();
+    // 初始化依赖项
+    _initDependencies();
 
-    // 加载完成
-    isFirstLoading.value = false;
+    try {
+      // 获取服务器信息
+      await getServerList();
+    } catch (e) {
+      print('✗ Error in ServerController onInit: $e');
+      errorMessage.value = 'Failed to initialize server controller';
+    } finally {
+      // 加载完成
+      isFirstLoading.value = false;
+      print('=== ServerController initialization completed ===');
+    }
+  }
+
+  // 初始化依赖项
+  void _initDependencies() {
+    try {
+      _userStorage = Get.find<UserStorage>();
+      serverId.value = _userStorage?.serverId.value ?? 0;
+      print('✓ UserStorage initialized');
+    } catch (e) {
+      print('⚠ Error getting UserStorage: $e');
+      _userStorage = null;
+      serverId.value = 0;
+    }
+
+    try {
+      _homepageController = Get.find<HomepageController>();
+      print('✓ HomepageController initialized');
+    } catch (e) {
+      print('⚠ Error getting HomepageController: $e');
+      _homepageController = null;
+    }
+
+    try {
+      _settingController = Get.find<SettingController>();
+      print('✓ SettingController initialized');
+    } catch (e) {
+      print('⚠ Error getting SettingController: $e');
+      _settingController = null;
+    }
   }
 
   /// 获取服务器列表
-  void getServerList() async {
-    serverList.value =
-        await DatabaseService.to.database.serverDao.findAllServer();
+  Future<void> getServerList() async {
+    isFirstLoading.value = true;
+    errorMessage.value = '';
+
+    try {
+      print('Getting server list...');
+      
+      if (DatabaseService.to.isDatabaseInitialized) {
+        try {
+          final servers = await DatabaseService.to.database.serverDao.findAllServer();
+          serverList.value = servers;
+          print('✓ Got ${servers.length} servers from database');
+        } catch (e) {
+          print('⚠ Error getting servers from database: $e');
+          serverList.value = [];
+        }
+      } else {
+        print('⚠ Database not initialized, returning empty server list');
+        serverList.value = [];
+      }
+    } catch (e) {
+      print('✗ Error getting server list: $e');
+      serverList.value = [];
+      errorMessage.value = 'Failed to get server list';
+    } finally {
+      isFirstLoading.value = false;
+    }
   }
 
   /// 切换服务器
-  void switchServer(ServerEntity server) async {
+  Future<void> switchServer(ServerEntity server) async {
     final ok = await showOkCancelAlertDialog(
       context: Get.context!,
       title: 'dialog_prompt_title'.tr,
@@ -46,52 +112,81 @@ class ServerController extends GetxController {
     );
     if (ok != OkCancelResult.ok) return;
 
+    // 检查必要的依赖项
+    if (_userStorage == null) {
+      SmartDialog.showToast('User storage not initialized');
+      return;
+    }
+
     // 本地用户信息
-    final userStorage = Get.find<UserStorage>();
+    final userStorage = _userStorage!;
 
     // 获取当前服务器信息
     final token = userStorage.token.value;
-    final serverId = userStorage.serverId.value;
-    final serverUrl = userStorage.serverUrl.value;
+    final currentServerId = userStorage.serverId.value;
+    final currentServerUrl = userStorage.serverUrl.value;
 
     try {
       SmartDialog.showLoading();
+      print('Switching to server: ${server.url}');
+
+      // 更新本地用户信息
       userStorage.token.value = '';
       userStorage.serverId.value = server.id!;
       userStorage.serverUrl.value = server.url;
+      serverId.value = server.id!;
 
       // 重置首页信息
-      _homepageController.serverId.value = server.id!;
+      if (_homepageController != null) {
+        _homepageController!.serverId.value = server.id!;
 
-      // 用户信息
-      final userInfo = await _homepageController.resetUserToken(server, force: true);
-      // 检查返回的用户信息是否有效
-      if (userInfo == null || (userInfo is Map && userInfo['id'] == null)) {
-        // 即使获取用户信息失败，也继续执行，因为服务器可能是匿名的
-        print('Warning: Failed to get user info, continuing with server switch');
+        // 用户信息
+        try {
+          final userInfo = await _homepageController!.resetUserToken(server, force: true);
+          // 检查返回的用户信息是否有效
+          if (userInfo == null || (userInfo is Map && userInfo['id'] == null)) {
+            // 即使获取用户信息失败，也继续执行，因为服务器可能是匿名的
+            print('Warning: Failed to get user info, continuing with server switch');
+          }
+
+          // 刷新首页数据
+          await _homepageController!.getObjectList();
+        } catch (e) {
+          print('⚠ Error updating homepage controller: $e');
+        }
       }
 
-      _homepageController.getObjectList();
-      Get.until((route) => Get.currentRoute == Routes.HOMEPAGE);
-
       // 重置设置页面信息
-      _settingController.serverId.value = server.id!;
-      _settingController.serverInfo.value = server;
+      if (_settingController != null) {
+        _settingController!.serverId.value = server.id!;
+        _settingController!.serverInfo.value = server;
+      }
+
+      // 导航回首页
+      Get.until((route) => Get.currentRoute == Routes.HOMEPAGE);
 
       SmartDialog.dismiss();
       SmartDialog.showToast('toast_switch_success'.tr);
+      print('✓ Server switched successfully');
     } catch (e) {
+      print('✗ Error switching server: $e');
+      // 恢复之前的服务器信息
       userStorage.token.value = token;
-      userStorage.serverId.value = serverId;
-      userStorage.serverUrl.value = serverUrl;
-      _homepageController.serverId.value = serverId;
+      userStorage.serverId.value = currentServerId;
+      userStorage.serverUrl.value = currentServerUrl;
+      serverId.value = currentServerId;
+      
+      if (_homepageController != null) {
+        _homepageController!.serverId.value = currentServerId;
+      }
+      
       SmartDialog.dismiss();
-      SmartDialog.showToast(e.toString());
+      SmartDialog.showToast('Failed to switch server: ${e.toString()}');
     }
   }
 
   /// 删除服务器
-  void deleteServer(int id) async {
+  Future<void> deleteServer(int id) async {
     final ok = await showOkCancelAlertDialog(
       context: Get.context!,
       title: 'dialog_prompt_title'.tr,
@@ -101,36 +196,113 @@ class ServerController extends GetxController {
     );
     if (ok != OkCancelResult.ok) return;
 
-    // 删除数据
-    await DatabaseService.to.database.serverDao.deleteServerById(id);
-    await DatabaseService.to.database.recentDao.deleteRecentByServerId(id);
-    await DatabaseService.to.database.progressDao.deleteProgressByServerId(id);
-    await DatabaseService.to.database.passwordManagerDao
-        .deletePasswordManagerByServerId(id);
+    try {
+      print('Deleting server with id: $id');
 
-    // 删除本地数据
-    if (serverId.value == id) {
-      Get.find<UserStorage>().id.value = '';
-      Get.find<UserStorage>().token.value = '';
-      Get.find<UserStorage>().serverId.value = 0;
-      Get.find<UserStorage>().serverUrl.value = '';
-      serverId.value = 0;
+      // 删除数据
+      if (DatabaseService.to.isDatabaseInitialized) {
+        try {
+          await DatabaseService.to.database.serverDao.deleteServerById(id);
+          print('✓ Server deleted from database');
+
+          // 删除关联数据
+          try {
+            await DatabaseService.to.database.recentDao.deleteRecentByServerId(id);
+            await DatabaseService.to.database.progressDao.deleteProgressByServerId(id);
+            await DatabaseService.to.database.passwordManagerDao
+                .deletePasswordManagerByServerId(id);
+            print('✓ Associated data deleted');
+          } catch (e) {
+            print('⚠ Error deleting associated data: $e');
+          }
+        } catch (e) {
+          print('⚠ Error deleting server from database: $e');
+        }
+      } else {
+        print('⚠ Database not initialized, cannot delete server');
+      }
+
+      // 删除本地数据
+      if (_userStorage != null && serverId.value == id) {
+        _userStorage!.id.value = '';
+        _userStorage!.token.value = '';
+        _userStorage!.serverId.value = 0;
+        _userStorage!.serverUrl.value = '';
+        serverId.value = 0;
+        print('✓ Local user data reset');
+      }
+
+      // 如果删除的是当前服务器
+      if (_homepageController != null && _homepageController!.serverId.value == id) {
+        _homepageController!.serverId.value = 0;
+        _homepageController!.userInfo.value = UserModel();
+        _homepageController!.objects.value.clear();
+        print('✓ Homepage controller reset');
+      }
+
+      // 设置页面
+      if (_settingController != null && _settingController!.serverId.value == id) {
+        _settingController!.serverId.value = 0;
+        _settingController!.serverInfo.value =
+            ServerEntity(url: '', type: 0, username: '', password: '');
+        print('✓ Setting controller reset');
+      }
+
+      // 刷新服务器列表
+      await getServerList();
+      print('✓ Server list refreshed');
+    } catch (e) {
+      print('✗ Error deleting server: $e');
+      SmartDialog.showToast('Failed to delete server: ${e.toString()}');
     }
+  }
 
-    // 如果删除的是当前服务器
-    if (_homepageController.serverId.value == id) {
-      _homepageController.serverId.value = 0;
-      _homepageController.userInfo.value = UserModel();
-      _homepageController.objects.value.clear();
+  /// 添加服务器
+  Future<void> addServer(ServerEntity server) async {
+    try {
+      print('Adding new server: ${server.url}');
+      
+      // 刷新服务器列表
+      await getServerList();
+      
+      // 重置首页信息
+      if (serverList.isEmpty && _userStorage != null) {
+        _userStorage!.serverId.value = server.id!;
+        _userStorage!.serverUrl.value = server.url;
+        serverId.value = server.id!;
+        print('✓ Set as default server');
+
+        // 重置首页信息
+        if (_homepageController != null) {
+          _homepageController!.serverId.value = server.id!;
+          try {
+            await _homepageController!.resetUserToken(server);
+            await _homepageController!.getObjectList();
+          } catch (e) {
+            print('⚠ Error updating homepage controller: $e');
+          }
+        }
+
+        // 重置设置页面信息
+        if (_settingController != null) {
+          _settingController!.serverId.value = server.id!;
+          _settingController!.serverInfo.value = server;
+        }
+      }
+      
+      print('✓ Server added successfully');
+    } catch (e) {
+      print('✗ Error adding server: $e');
+      SmartDialog.showToast('Failed to add server: ${e.toString()}');
     }
+  }
 
-    // 设置页面
-    if (_settingController.serverId.value == id) {
-      _settingController.serverId.value = 0;
-      _settingController.serverInfo.value =
-          ServerEntity(url: '', type: 0, username: '', password: '');
-    }
+  // 检查是否有活动服务器
+  bool get hasActiveServer => serverId.value != null && serverId.value! > 0;
 
-    getServerList();
+  // 获取当前活动服务器
+  ServerEntity? get activeServer {
+    if (!hasActiveServer) return null;
+    return serverList.firstWhereOrNull((server) => server.id == serverId.value);
   }
 }

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:get/get.dart';
 import 'package:jiffy/jiffy.dart';
 import 'package:flutter/material.dart';
@@ -10,6 +12,7 @@ import 'package:xlist/helper/index.dart';
 import 'package:xlist/models/index.dart';
 import 'package:xlist/common/index.dart';
 import 'package:xlist/constants/index.dart';
+import 'package:xlist/services/index.dart';
 
 class ObjectListItem extends StatefulWidget {
   final ObjectModel object;
@@ -28,52 +31,86 @@ class ObjectListItem extends StatefulWidget {
 class _ObjectListItemState extends State<ObjectListItem>
     with AutomaticKeepAliveClientMixin {
   ObjectModel get object => widget.object;
+  final _thumbnailPath = Rxn<String>();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadThumbnail();
+  }
+
+  Future<void> _loadThumbnail() async {
+    if (widget.isShowPreview &&
+        object.thumb != null &&
+        object.thumb!.isNotEmpty) {
+      final path = await ThumbnailCache().getThumbnailForObject(object);
+      if (path != null) {
+        _thumbnailPath.value = path;
+      }
+    }
+  }
 
   /// 构建图标
   Widget _buildIcon() {
     if (widget.isShowPreview &&
         object.thumb != null &&
         object.thumb!.isNotEmpty) {
-      return Stack(
-        alignment: Alignment.center,
-        children: [
-          Container(
-            width: CommonUtils.isPad ? 60 : 130.sp,
-            height: CommonUtils.isPad ? 60 : 130.sp,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(15.r),
-              child: CachedNetworkImage(
-                imageUrl: object.thumb!,
-                fit: BoxFit.cover,
-                placeholder: (context, url) =>
-                    CupertinoActivityIndicator(radius: 8.0),
-                errorWidget: (context, url, error) =>
-                    Assets.common.logo.image(),
+      return Obx(() {
+        final thumbnailPath = _thumbnailPath.value;
+        final useCached = thumbnailPath != null && thumbnailPath!.isNotEmpty;
+        
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            Container(
+              width: CommonUtils.isPad ? 60 : 130.sp,
+              height: CommonUtils.isPad ? 60 : 130.sp,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(15.r),
+                child: useCached
+                    ? Image.file(
+                        File(thumbnailPath!),
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            _buildNetworkImage(),
+                      )
+                    : _buildNetworkImage(),
               ),
             ),
-          ),
-          PreviewHelper.isVideo(object.name ?? '')
-              ? Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Padding(
-                    padding: EdgeInsets.all(2.r),
-                    child: Icon(
-                      CupertinoIcons.video_camera_solid,
-                      size: CommonUtils.isPad ? 20 : 35.sp,
-                      color: Colors.white.withOpacity(0.8),
+            PreviewHelper.isVideo(object.name ?? '')
+                ? Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Padding(
+                      padding: EdgeInsets.all(2.r),
+                      child: Icon(
+                        CupertinoIcons.video_camera_solid,
+                        size: CommonUtils.isPad ? 20 : 35.sp,
+                        color: Colors.white.withOpacity(0.8),
+                      ),
                     ),
-                  ),
-                )
-              : SizedBox(),
-        ],
-      );
+                  )
+                : SizedBox(),
+          ],
+        );
+      });
     }
 
     return Icon(
       FileType.getIcon(object.type ?? 0, object.name ?? ''),
       size: CommonUtils.isPad ? 60 : 130.sp,
       color: Get.theme.primaryColor,
+    );
+  }
+
+  Widget _buildNetworkImage() {
+    return CachedNetworkImage(
+      imageUrl: object.thumb!,
+      fit: BoxFit.cover,
+      placeholder: (context, url) =>
+          CupertinoActivityIndicator(radius: 8.0),
+      errorWidget: (context, url, error) =>
+          Assets.common.logo.image(),
     );
   }
 

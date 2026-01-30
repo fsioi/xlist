@@ -13,7 +13,7 @@ class PermissionHelper {
   /// [permission] 权限
   static bool can(UserModel user, int permission) {
     return PermissionHelper.isAdmin(user) ||
-        ((user.permission! >> permission) & 1) == 1;
+        ((user.permission ?? 0) >> permission) & 1 == 1;
   }
 
   static bool canSeeHides(UserModel user) => PermissionHelper.can(user, 0);

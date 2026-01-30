@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
@@ -8,9 +10,33 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 import 'package:xlist/pages/image_preview/index.dart';
+import 'package:xlist/services/index.dart';
 
 class ImagePreviewPage extends GetView<ImagePreviewController> {
-  const ImagePreviewPage({Key? key}) : super(key: key);
+  ImagePreviewPage({Key? key}) : super(key: key);
+  late final _thumbnailPaths = RxList<String?>([]);
+  final _isInitialized = false.obs;
+
+  void _preloadThumbnails() async {
+    if (_isInitialized.value) return;
+    _isInitialized.value = true;
+
+    for (var i = 0; i < controller.imageUrls.length; i++) {
+      final url = controller.imageUrls[i];
+      try {
+        final path = await ThumbnailCache().getThumbnail(
+          url: url,
+          headers: controller.imageHeaders,
+          isVideo: false,
+        );
+        if (path != null) {
+          _thumbnailPaths.add(path!);
+        }
+      } catch (e) {
+        print('Error preloading thumbnail for $url: $e');
+      }
+    }
+  }
 
   /// 页面指示器
   Widget _buildExtendedPageIndicator() {
@@ -35,6 +61,26 @@ class ImagePreviewPage extends GetView<ImagePreviewController> {
   /// 图片
   /// [url] 图片地址
   Widget _buildNetworkImage(String url) {
+    return Obx(() {
+      final index = controller.imageUrls.indexOf(url);
+      final thumbnailPath = index >= 0 && index < _thumbnailPaths.length
+          ? _thumbnailPaths[index]
+          : null;
+      
+      if (thumbnailPath != null && thumbnailPath!.isNotEmpty) {
+        return Image.file(
+          File(thumbnailPath),
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) =>
+              _buildCachedNetworkImage(url),
+        );
+      }
+      
+      return _buildCachedNetworkImage(url);
+    });
+  }
+
+  Widget _buildCachedNetworkImage(String url) {
     return CachedNetworkImage(
       imageUrl: url,
       fit: BoxFit.cover,

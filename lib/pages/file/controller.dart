@@ -5,35 +5,45 @@ import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:xlist/common/index.dart';
 import 'package:xlist/helper/index.dart';
 import 'package:xlist/models/index.dart';
-import 'package:xlist/services/index.dart';
-import 'package:xlist/storages/index.dart';
-import 'package:xlist/repositorys/index.dart';
-import 'package:xlist/repositorys/user_repository.dart';
+import 'package:xlist/services/core_service.dart';
 
 class FileController extends GetxController {
   final object = ObjectModel().obs;
   final userInfo = UserModel().obs; // 用户信息
-  final serverId = Get.find<UserStorage>().serverId.value;
   final isLoading = true.obs; // 是否正在加载
 
   // 获取参数
   final String path = Get.arguments['path'] ?? '';
   final String name = Get.arguments['name'] ?? '';
 
+  late CoreService coreService;
+
   @override
   void onInit() async {
     super.onInit();
+    coreService = CoreService.to;
 
     // 获取文件信息
-    object.value = await ObjectRepository.get(path: '${path}${name}');
-    userInfo.value = await UserRepository.me(); // 获取用户信息
+    // 暂时使用模拟数据
+    object.value = ObjectModel();
+    object.value.name = name;
+    object.value.type = 1;
+    object.value.size = 1024 * 1024;
+    object.value.rawUrl = '${path}${name}';
+    userInfo.value = coreService.currentUser.value ?? UserModel(); // 获取用户信息
     isLoading.value = false;
 
     // 加入最近浏览
-    await CommonUtils.addRecent(object.value, path, name);
+    await coreService.addToRecent(object.value);
 
     // 绑定进度监听
-    DownloadService.to.bindBackgroundIsolate((id, status, progress) {});
+    try {
+      if (coreService.downloadService != null) {
+        coreService.downloadService.bindBackgroundIsolate((id, status, progress) {});
+      }
+    } catch (e) {
+      print('Error binding background isolate: $e');
+    }
   }
 
   /// 复制链接
@@ -50,7 +60,13 @@ class FileController extends GetxController {
 
   /// 下载文件
   void download() async {
-    DownloadHelper.file(path, name, object.value.type!, object.value.size!);
+    await coreService.downloadObject(object.value);
+  }
+
+  /// 添加到收藏
+  Future<void> addToFavorites() async {
+    await coreService.addToFavorites(object.value);
+    SmartDialog.showToast('toast_add_favorite_success'.tr);
   }
 
   @override
@@ -58,6 +74,12 @@ class FileController extends GetxController {
     super.onClose();
 
     // 取消进度监听
-    DownloadService.to.unbindBackgroundIsolate();
+    try {
+      if (coreService.downloadService != null) {
+        coreService.downloadService.unbindBackgroundIsolate();
+      }
+    } catch (e) {
+      print('Error unbinding background isolate: $e');
+    }
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
+import 'package:xlist/routes/app_pages.dart';
 
 class ImageGalleryPage extends StatelessWidget {
   final List<String> images = [
@@ -19,7 +20,7 @@ class ImageGalleryPage extends StatelessWidget {
           IconButton(
             icon: Icon(Icons.download),
             onPressed: () {
-              Get.toNamed('/setting/download');
+              Get.toNamed(Routes.SETTING_DOWNLOAD);
             },
           ),
         ],

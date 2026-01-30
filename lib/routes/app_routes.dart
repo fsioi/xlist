@@ -17,6 +17,9 @@ abstract class Routes {
   static const VIDEO_PLAYER = _Paths.VIDEO_PLAYER;
   static const AUDIO_PLAYER = _Paths.AUDIO_PLAYER;
 
+  // Image Gallery
+  static const IMAGE_GALLERY = _Paths.IMAGE_GALLERY;
+
   // Settings
   static const SETTING = _Paths.SETTING;
   static const SETTING_SERVER = _Paths.SETTING + _Paths.SERVER;
@@ -43,6 +46,9 @@ abstract class _Paths {
   static const IMAGE_PREVIEW = '/image/preview';
   static const VIDEO_PLAYER = '/video/player';
   static const AUDIO_PLAYER = '/audio/player';
+
+  // Image Gallery
+  static const IMAGE_GALLERY = '/image_gallery';
 
   // Settings
   static const SETTING = '/setting';

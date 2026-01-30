@@ -59,17 +59,21 @@ class DioService extends GetxService {
 class DioInterceptors extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    final token = Get.find<UserStorage>().token.value;
-    options.headers.addAll(
-      Map.from(DioService.to.defaultHeaders)
-        ..addAll({HttpHeaders.authorizationHeader: token}),
-    );
+    try {
+      final token = Get.find<UserStorage>().token.value;
+      options.headers.addAll(
+        Map.from(DioService.to.defaultHeaders)
+          ..addAll({HttpHeaders.authorizationHeader: token}),
+      );
+    } catch (e) {
+      print('Error adding headers: $e');
+    }
     return super.onRequest(options, handler);
   }
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
-    // 错误处理
+    // 只处理 JSON 响应，不处理 WebDAV 的 XML 响应
     if (response.data == null) {
       response.data = {'message': '您的网络不太好, 请刷新页面重试吧', 'code': -1};
     }

@@ -35,7 +35,7 @@ class AppPages {
       transitionDuration: Duration.zero,
     ),
     GetPage(
-      name: '/image_gallery',
+      name: Routes.IMAGE_GALLERY,
       page: () => ImageGalleryPage(),
       binding: ImageGalleryBinding(),
     ),

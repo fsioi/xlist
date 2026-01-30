@@ -81,9 +81,21 @@ class CommonUtils {
   static double get navIconSize => isPad ? 25 : 70.sp;
 
   /// 是否为平板
-  static bool get isPad =>
-      DeviceInfoService.to.isIpad ||
-      MediaQuery.of(Get.context!).size.shortestSide >= 600;
+  static bool get isPad {
+    try {
+      // 尝试使用DeviceInfoService
+      return DeviceInfoService.to.isIpad ||
+          MediaQuery.of(Get.context!).size.shortestSide >= 600;
+    } catch (e) {
+      // 如果DeviceInfoService未初始化，只使用MediaQuery
+      try {
+        return MediaQuery.of(Get.context!).size.shortestSide >= 600;
+      } catch (e) {
+        // 如果Get.context也不可用，默认返回false
+        return false;
+      }
+    }
+  }
 
   /// 获取导航栏返回按钮
   static Widget get backButton => CupertinoButton(

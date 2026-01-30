@@ -34,12 +34,10 @@ class ObjectHelper {
   }) {
     // 文件夹
     if (type == FileType.FOLDER) {
-      final tag = '${path}${name}';
-      Get.to(
-        () => DetailPage(tag: tag, previousPageTitle: '返回'),
-        routeName: '${Routes.DETAIL}${tag}',
-        arguments: {'path': path, 'name': name},
-      );
+      // 使用 homepage controller 进行导航
+      final homepageController = Get.find<HomepageController>();
+      final newPath = path == '/' ? '/${name}' : '${path}/${name}';
+      homepageController.navigateToPath(newPath);
       return;
     }
 

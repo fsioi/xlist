@@ -15,6 +15,93 @@ import 'package:xlist/helper/index.dart';
 class Homepage extends GetView<HomepageController> {
   const Homepage({Key? key}) : super(key: key);
 
+  Widget _buildGridView() {
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: EdgeInsets.symmetric(horizontal: 5),
+          sliver: SliverGrid(
+            gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: CommonUtils.isPad ? 130 : 300.w,
+              mainAxisExtent: 160,
+              mainAxisSpacing: 10,
+              crossAxisSpacing: 10,
+            ),
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                final object = controller.objects.value[index];
+                
+                return FrameSeparateWidget(
+                  index: index,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () {
+                      ObjectHelper.click(
+                        path: controller.currentPath.value,
+                        type: object.type ?? 0,
+                        name: object.name ?? '',
+                        objects: controller.objects.value,
+                      );
+                    },
+                    child: ObjectGridItem(
+                      object: object,
+                      isShowPreview: controller.isShowPreview.value,
+                    ),
+                  ),
+                );
+              },
+              childCount: controller.objects.value.length,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildListView() {
+    return CustomScrollView(
+      slivers: [
+        SliverList(
+          delegate: SliverChildBuilderDelegate(
+            (context, index) {
+              final object = controller.objects.value[index];
+              
+              return FrameSeparateWidget(
+                index: index,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    ObjectHelper.click(
+                      path: controller.currentPath.value,
+                      type: object.type ?? 0,
+                      name: object.name ?? '',
+                      objects: controller.objects.value,
+                    );
+                  },
+                  child: Column(
+                    children: [
+                      ObjectListItem(
+                        object: object,
+                        isShowPreview: controller.isShowPreview.value,
+                      ),
+                      Container(
+                        padding: EdgeInsets.only(top: CommonUtils.isPad ? 0 : 20.r),
+                        child: CommonUtils.isPad
+                            ? Divider(height: 1.r, indent: 90, endIndent: 10)
+                            : Divider(height: 1.r, indent: 190.r, endIndent: 15.r),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+            childCount: controller.objects.value.length,
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
@@ -56,32 +143,44 @@ class Homepage extends GetView<HomepageController> {
       ),
       child: SafeArea(
         child: Obx(() {
-          final userStorage = Get.find<UserStorage>();
-          final hasServer = controller.serverId.value != 0 && userStorage.serverUrl.value.isNotEmpty;
-          
           if (controller.isFirstLoading.isTrue) {
             return Center(
               child: CupertinoActivityIndicator(),
             );
           }
           
-          if (!hasServer) {
-            return Center(
+          final fileCount = controller.objects.value.length;
+          
+          if (fileCount == 0) {
+            // 显示空状态或服务器配置提示
+            return Container(
+              padding: EdgeInsets.all(16),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    'homepage_empty_server_title'.tr,
-                    style: Get.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+                  Container(
+                    padding: EdgeInsets.all(12),
+                    margin: EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.blue[100],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(CupertinoIcons.info_circle, color: Colors.blue[700]),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            '未配置服务器或目录为空',
+                            style: TextStyle(color: Colors.blue[700]),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  SizedBox(height: 20.h),
                   CupertinoButton(
                     child: Text('添加服务器'),
                     onPressed: () async {
-                      // 先初始化SettingController
-                      if (!Get.isRegistered<SettingController>()) {
-                        Get.lazyPut<SettingController>(() => SettingController());
-                      }
                       // 直接导航到服务器设置页面
                       await Get.toNamed(Routes.SETTING_SERVER);
                       // 刷新主页数据
@@ -93,92 +192,8 @@ class Homepage extends GetView<HomepageController> {
             );
           }
           
-          if (controller.layoutType.value == 'grid') {
-            return CustomScrollView(
-              slivers: [
-                SliverPadding(
-                  padding: EdgeInsets.symmetric(horizontal: 5),
-                  sliver: SliverGrid(
-                    gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: CommonUtils.isPad ? 130 : 300.w,
-                      mainAxisExtent: 160,
-                      mainAxisSpacing: 10,
-                      crossAxisSpacing: 10,
-                    ),
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final object = controller.objects.value[index];
-                        final isFolder = object.isDir ?? false;
-                        
-                        return FrameSeparateWidget(
-                          index: index,
-                          child: GestureDetector(
-                            behavior: HitTestBehavior.opaque,
-                            onTap: () {
-                              ObjectHelper.click(
-                                path: '/',
-                                type: object.type ?? 0,
-                                name: object.name ?? '',
-                                objects: controller.objects.value,
-                              );
-                            },
-                            child: ObjectGridItem(
-                              object: object,
-                              isShowPreview: controller.isShowPreview.value,
-                            ),
-                          ),
-                        );
-                      },
-                      childCount: controller.objects.value.length,
-                    ),
-                  ),
-                ),
-              ],
-            );
-          } else {
-            return CustomScrollView(
-              slivers: [
-                SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final object = controller.objects.value[index];
-                      final isFolder = object.isDir ?? false;
-                      
-                      return FrameSeparateWidget(
-                        index: index,
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: () {
-                            ObjectHelper.click(
-                              path: '/',
-                              type: object.type ?? 0,
-                              name: object.name ?? '',
-                              objects: controller.objects.value,
-                            );
-                          },
-                          child: Column(
-                            children: [
-                              ObjectListItem(
-                                object: object,
-                                isShowPreview: controller.isShowPreview.value,
-                              ),
-                              Container(
-                                padding: EdgeInsets.only(top: CommonUtils.isPad ? 0 : 20.r),
-                                child: CommonUtils.isPad
-                                    ? Divider(height: 1.r, indent: 90, endIndent: 10)
-                                    : Divider(height: 1.r, indent: 190.r, endIndent: 15.r),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                    childCount: controller.objects.value.length,
-                  ),
-                ),
-              ],
-            );
-          }
+          // 显示文件列表
+          return controller.layoutType.value == 'grid' ? _buildGridView() : _buildListView();
         }),
       ),
     );
