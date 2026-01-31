@@ -9,6 +9,7 @@ import 'package:xlist/pages/setting/index.dart';
 import 'package:xlist/pages/homepage/index.dart';
 import 'package:xlist/database/entity/index.dart';
 import 'package:xlist/services/database_service.dart';
+import 'package:xlist/services/core_service.dart';
 
 class ServerController extends GetxController {
   final serverList = <ServerEntity>[].obs;
@@ -134,7 +135,20 @@ class ServerController extends GetxController {
       userStorage.token.value = '';
       userStorage.serverId.value = server.id!;
       userStorage.serverUrl.value = server.url;
+      userStorage.username.value = server.username ?? '';
+      userStorage.password.value = server.password ?? '';
       serverId.value = server.id!;
+
+      // 更新 CoreService 的当前服务器
+      try {
+        final coreService = Get.find<CoreService>();
+        coreService.currentServer.value = server;
+        // 刷新用户数据
+        await coreService.loadUserData();
+        print('✓ Updated CoreService current server: ${server.url}');
+      } catch (e) {
+        print('⚠ Error updating CoreService: $e');
+      }
 
       // 重置首页信息
       if (_homepageController != null) {
@@ -175,6 +189,23 @@ class ServerController extends GetxController {
       userStorage.serverId.value = currentServerId;
       userStorage.serverUrl.value = currentServerUrl;
       serverId.value = currentServerId;
+      
+      // 恢复 CoreService 的当前服务器
+      try {
+        final coreService = Get.find<CoreService>();
+        // 尝试找到之前的服务器
+        if (currentServerId > 0) {
+          final servers = await DatabaseService.to.database.serverDao.findAllServer();
+          final previousServer = servers.firstWhereOrNull((s) => s.id == currentServerId);
+          if (previousServer != null) {
+            coreService.currentServer.value = previousServer;
+            await coreService.loadUserData();
+            print('✓ Restored CoreService current server: ${previousServer.url}');
+          }
+        }
+      } catch (e) {
+        print('⚠ Error restoring CoreService: $e');
+      }
       
       if (_homepageController != null) {
         _homepageController!.serverId.value = currentServerId;
@@ -265,12 +296,23 @@ class ServerController extends GetxController {
       // 刷新服务器列表
       await getServerList();
       
-      // 重置首页信息
-      if (serverList.isEmpty && _userStorage != null) {
+      // 无论serverList是否为空，都更新全局状态
+      if (_userStorage != null) {
+        // 更新本地存储
         _userStorage!.serverId.value = server.id!;
         _userStorage!.serverUrl.value = server.url;
         serverId.value = server.id!;
-        print('✓ Set as default server');
+        print('✓ Updated local storage with new server');
+
+        // 更新 CoreService 的当前服务器
+        try {
+          final coreService = Get.find<CoreService>();
+          coreService.currentServer.value = server;
+          await coreService.loadUserData();
+          print('✓ Updated CoreService current server: ${server.url}');
+        } catch (e) {
+          print('⚠ Error updating CoreService: $e');
+        }
 
         // 重置首页信息
         if (_homepageController != null) {
@@ -290,6 +332,10 @@ class ServerController extends GetxController {
         }
       }
       
+      // 导航回首页
+      Get.until((route) => Get.currentRoute == Routes.HOMEPAGE);
+      
+      SmartDialog.showToast('Server added successfully');
       print('✓ Server added successfully');
     } catch (e) {
       print('✗ Error adding server: $e');

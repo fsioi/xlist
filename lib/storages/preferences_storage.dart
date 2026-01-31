@@ -44,4 +44,8 @@ class PreferencesStorage {
   final serverId = 0.val('serverId', getBox: _prefBox);
 
   final serverUrl = ''.val('serverUrl', getBox: _prefBox);
+
+  final username = ''.val('username', getBox: _prefBox);
+
+  final password = ''.val('password', getBox: _prefBox);
 }

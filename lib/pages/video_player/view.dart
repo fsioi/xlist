@@ -123,26 +123,69 @@ class VideoPlayerPage extends GetView<VideoPlayerController> {
   @override
   Widget build(BuildContext context) {
     _loadThumbnail();
-    return CupertinoPageScaffold(
-      backgroundColor: Get.theme.scaffoldBackgroundColor,
-      navigationBar: _buildNavigationBar(),
-      child: SafeArea(
-        child: Column(
-          children: [
-            _buildVideoPlayer(),
-            _buildControlBar(),
-          ],
-        ),
-      ),
+    return Obx(
+      () => controller.isFullScreen.value
+          ? Container(
+              color: Colors.black,
+              child: Stack(
+                children: [
+                  _buildVideoPlayer(),
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: Container(
+                      color: Colors.black.withOpacity(0.5),
+                      child: _buildControlBar(),
+                    ),
+                  ),
+                  Positioned(
+                    top: 20,
+                    left: 20,
+                    child: CupertinoButton(
+                      onPressed: () {
+                        controller.toggleFullScreen();
+                      },
+                      child: Icon(
+                        CupertinoIcons.back, 
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : CupertinoPageScaffold(
+              backgroundColor: Get.theme.scaffoldBackgroundColor,
+              navigationBar: _buildNavigationBar(),
+              child: SafeArea(
+                child: Column(
+                  children: [
+                    _buildVideoPlayer(),
+                    _buildControlBar(),
+                  ],
+                ),
+              ),
+            ),
     );
   }
 
   Widget _buildVideoPlayer() {
     return Obx(
       () => controller.playerInitialized.value
-          ? AspectRatio(
-              aspectRatio: controller.videoPlayerController.value.aspectRatio,
-              child: vp.VideoPlayer(controller.videoPlayerController),
+          ? Obx(
+              () => controller.isFullScreen.value
+                  ? Container(
+                      width: double.infinity,
+                      height: double.infinity,
+                      child: vp.VideoPlayer(controller.videoPlayerController),
+                    )
+                  : Center(
+                      child: AspectRatio(
+                        aspectRatio: controller.videoPlayerController.value.aspectRatio,
+                        child: vp.VideoPlayer(controller.videoPlayerController),
+                      ),
+                    ),
             )
           : const Center(
               child: CupertinoActivityIndicator(
@@ -199,12 +242,13 @@ class VideoPlayerPage extends GetView<VideoPlayerController> {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           CupertinoButton(
             onPressed: controller.seekBackward,
             child: const Icon(CupertinoIcons.gobackward_10),
           ),
+          SizedBox(width: 20),
           CupertinoButton(
             onPressed: controller.togglePlayPause,
             child: Obx(
@@ -216,6 +260,7 @@ class VideoPlayerPage extends GetView<VideoPlayerController> {
               ),
             ),
           ),
+          SizedBox(width: 20),
           CupertinoButton(
             onPressed: controller.seekForward,
             child: const Icon(CupertinoIcons.goforward_10),

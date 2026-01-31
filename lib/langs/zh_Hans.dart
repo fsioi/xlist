@@ -14,6 +14,10 @@ const Map<String, String> zh_Hans = {
   'pull_down_copy_link': '复制链接',
   'pull_down_download_file': '添加到下载列表',
   'pull_down_save_image': '保存到相册',
+  'pull_down_properties': '文件属性',
+  'pull_down_cut': '剪切',
+  'pull_down_grid_layout': '网格布局',
+  'pull_down_carousel_layout': '轮播布局',
 
   // General
   'search': '搜索',
@@ -71,6 +75,7 @@ const Map<String, String> zh_Hans = {
   'toast_switch_success': '切换成功',
   'toast_upload_success': '上传成功',
   'toast_upload_loading': '上传中...',
+  'toast_upload_partial_failure': '部分文件上传失败，成功: {success}，失败: {fail}',
   'toast_download_unfinished': '下载未完成',
   'toast_get_user_info_fail': '获取用户信息失败',
   'toast_current_play_file': '当前播放文件',
@@ -80,6 +85,7 @@ const Map<String, String> zh_Hans = {
   'toast_switch_loading': '切换中...',
   'toast_switch_subtitle_fail': '切换字幕失败',
   'toast_favorite_success': '已加入收藏',
+  'toast_add_favorite_success': '已添加到收藏',
 
   // Dialogs
   'dialog_prompt_title': '提示',
@@ -104,9 +110,6 @@ const Map<String, String> zh_Hans = {
   'add_server_toast_url_invalid': '服务器地址必须 http:// 或者 https:// 开头',
   'add_server_toast_url_user_invalid': '服务器地址和用户名无效',
   'add_server_toast_save_success': '保存成功',
-  'add_server_dialog_2fa_title': '2FA 验证',
-  'add_server_dialog_2fa_hint': '请输入您的 OTP 验证码',
-  'add_server_toast_2fa_error': '2FA 验证失败',
   'add_server_section_header': '请填写服务器信息',
   'add_server_section_footer':
       '服务器地址格式为：https://example.com。\n请先测试服务器地址和用户名是否正确，再保存。',
@@ -119,14 +122,16 @@ const Map<String, String> zh_Hans = {
 
   // Pages
   'homepage_title': '文件管理',
-  'homepage_empty_server_title': '请先新建一个 Alist 服务器',
-  'homepage_empty_server_help': '了解 Alist ?',
+  'homepage_empty_server_title': '请先新建一个 WebDAV 服务器',
+  'homepage_empty_server_help': '了解 WebDAV ?',
   'homepage_empty_server_button': '新建',
   'directory_root_title': '选择目标文件夹',
   'directory_empty_description': '没有更多目录啦!!!',
   'file_unsupported_description': '暂不支持打开此类文件, 请添加到下载列表\n下载完成后, 可以使用其他应用打开并预览',
   'video_switch_subtitle': '切换字幕',
   'video_switch_audio': '切换音轨',
+  'video_switch_subtitle_not_supported': '不支持切换字幕',
+  'video_switch_audio_not_supported': '不支持切换音轨',
   'video_tab_introduction': '简介',
   'video_tab_playlist': '播放列表',
   'detail_dialog_password_title': '密码',

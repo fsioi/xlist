@@ -126,21 +126,15 @@ class _ObjectGridItemState extends State<ObjectGridItem>
           alignment: Alignment.center,
           child: Text(
             object.name ?? '',
-            maxLines: 2,
+            maxLines: 1,
             textAlign: TextAlign.center,
             style: Get.textTheme.bodyLarge,
             overflow: TextOverflow.ellipsis,
           ),
         ),
-        SizedBox(height: 7.h),
+        SizedBox(height: 3.h),
         Text(
           modified,
-          style: Get.textTheme.bodySmall,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        Text(
-          '${object.isDir! ? '∞' : CommonUtils.formatFileSize(object.size!)}',
           style: Get.textTheme.bodySmall,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -156,7 +150,7 @@ class _ObjectGridItemState extends State<ObjectGridItem>
     return Column(
       children: [
         _buildIcon(),
-        SizedBox(height: 20.h),
+        SizedBox(height: 5.h),
         _buildTitleAndTime(),
       ],
     );

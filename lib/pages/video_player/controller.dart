@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:get/get.dart';
@@ -13,6 +14,7 @@ import 'package:audio_service/audio_service.dart';
 import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:subtitle_wrapper_package/subtitle_wrapper_package.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 
 import 'package:xlist/gen/index.dart';
 import 'package:xlist/helper/index.dart';
@@ -21,8 +23,9 @@ import 'package:xlist/common/utils.dart';
 import 'package:xlist/services/core_service.dart';
 import 'package:xlist/constants/index.dart';
 import 'package:xlist/database/entity/index.dart';
+import 'package:xlist/repositorys/index.dart';
 
-class VideoPlayerController extends SuperController {
+class VideoPlayerController extends SuperController with WidgetsBindingObserver {
   final object = ObjectModel().obs;
   final userInfo = UserModel().obs;
   final httpHeaders = Map<String, String>().obs;
@@ -47,6 +50,7 @@ class VideoPlayerController extends SuperController {
   final currentPosition = Duration.zero.obs;
   final totalDuration = Duration.zero.obs;
   final isPlaying = false.obs;
+  final isFullScreen = false.obs;
 
   late bool isAutoPlay;
   late bool isBackgroundPlay;
@@ -101,16 +105,19 @@ class VideoPlayerController extends SuperController {
 
     if (file.isEmpty) {
       try {
-        // 暂时使用模拟数据
-        object.value = ObjectModel();
-        object.value.name = name;
-        object.value.type = 1;
-        object.value.size = 1024 * 1024 * 1024;
-        object.value.rawUrl = '${path}${name}';
-        object.value.thumb = 'https://example.com/thumbnail.jpg';
-        // 模拟获取 headers
-        httpHeaders.value = {};
+        // 获取视频文件信息
+        final videoObject = await ObjectRepository.get(path: '${path}${name}');
+        videoObject.name = name;
+        videoObject.rawUrl = CommonUtils.getDownloadLink(
+          path,
+          object: videoObject,
+          userInfo: userInfo.value,
+        );
+        // 设置WebDAV认证头
+        httpHeaders.value = DriverHelper.getWebDAVHeaders();
+        object.value = videoObject;
       } catch (e) {
+        print('Error getting video object: $e');
         SmartDialog.showToast('toast_get_object_fail'.tr);
         return;
       }
@@ -140,10 +147,20 @@ class VideoPlayerController extends SuperController {
       return;
     }
 
-    player = vp.VideoPlayerController.networkUrl(
-      Uri.parse(object.value.rawUrl!),
-      httpHeaders: httpHeaders.cast<String, String>(),
-    );
+    // 初始化视频播放器，支持本地文件和网络文件
+    String videoUrl = object.value.rawUrl!;
+    if (videoUrl.startsWith('file://')) {
+      // 本地视频文件
+      player = vp.VideoPlayerController.file(
+        File(videoUrl.replaceFirst('file://', '')),
+      );
+    } else {
+      // 网络视频文件
+      player = vp.VideoPlayerController.networkUrl(
+        Uri.parse(videoUrl),
+        httpHeaders: httpHeaders.cast<String, String>(),
+      );
+    }
     videoPlayerController = player;
     await player.initialize();
     playerInitialized.value = true;
@@ -167,7 +184,29 @@ class VideoPlayerController extends SuperController {
     } catch (e) {
       print('Error binding background isolate: $e');
     }
+
+    // 添加 WidgetsBindingObserver 来监听屏幕方向变化
+    WidgetsBinding.instance.addObserver(this);
+
     isLoading.value = false;
+  }
+
+  @override
+  void didChangeMetrics() {
+    super.didChangeMetrics();
+    
+    final orientation = MediaQuery.of(Get.context!).orientation;
+    if (orientation == Orientation.landscape) {
+      // 横屏模式，自动进入全屏
+      if (!isFullScreen.value) {
+        toggleFullScreen();
+      }
+    } else if (orientation == Orientation.portrait) {
+      // 竖屏模式，自动退出全屏
+      if (isFullScreen.value) {
+        toggleFullScreen();
+      }
+    }
   }
 
   void _videoPlayerListener() async {
@@ -249,14 +288,19 @@ class VideoPlayerController extends SuperController {
 
     SmartDialog.showLoading();
     try {
-      // 模拟获取对象信息
-      object.value = ObjectModel();
-      object.value.name = _object.name;
-      object.value.type = _object.type;
-      object.value.size = _object.size;
-      object.value.rawUrl = '${path}${_object.name}';
-      object.value.thumb = 'https://example.com/thumbnail.jpg';
+      // 获取视频文件信息
+      final videoObject = await ObjectRepository.get(path: '${path}${_object.name}');
+      videoObject.name = _object.name;
+      videoObject.rawUrl = CommonUtils.getDownloadLink(
+        path,
+        object: videoObject,
+        userInfo: userInfo.value,
+      );
+      // 设置WebDAV认证头
+      httpHeaders.value = DriverHelper.getWebDAVHeaders();
+      object.value = videoObject;
     } catch (e) {
+      print('Error getting video object: $e');
       SmartDialog.dismiss();
       SmartDialog.showToast(e.toString());
       return;
@@ -399,6 +443,21 @@ class VideoPlayerController extends SuperController {
     await player.seekTo(newPosition > maxPosition ? maxPosition : newPosition);
   }
 
+  void toggleFullScreen() async {
+    isFullScreen.value = !isFullScreen.value;
+    if (isFullScreen.value) {
+      await SystemChrome.setPreferredOrientations([
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
+    } else {
+      await SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+        DeviceOrientation.portraitDown,
+      ]);
+    }
+  }
+
   @override
   void onPaused() {
     if (player.value.isPlaying && !isBackgroundPlay) {
@@ -444,6 +503,8 @@ class VideoPlayerController extends SuperController {
 
     _timer?.cancel();
     _currentPosSubs?.cancel();
+    // 移除 WidgetsBindingObserver
+    WidgetsBinding.instance.removeObserver(this);
     // 暂时注释掉音频服务
     // audioHandler.streamController.add(PlaybackState());
     // audioHandler.streamController.close();

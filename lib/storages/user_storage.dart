@@ -6,6 +6,8 @@ class UserStorage extends GetxService {
   final token = ''.obs;
   final serverId = 0.obs;
   final serverUrl = ''.obs;
+  final username = ''.obs;
+  final password = ''.obs;
 
   @override
   void onInit() {
@@ -14,6 +16,8 @@ class UserStorage extends GetxService {
     token.value = Get.find<PreferencesStorage>().token.val ?? '';
     serverId.value = Get.find<PreferencesStorage>().serverId.val ?? 0;
     serverUrl.value = Get.find<PreferencesStorage>().serverUrl.val ?? '';
+    username.value = Get.find<PreferencesStorage>().username.val ?? '';
+    password.value = Get.find<PreferencesStorage>().password.val ?? '';
   }
 
   @override
@@ -22,6 +26,8 @@ class UserStorage extends GetxService {
     token.close();
     serverId.close();
     serverUrl.close();
+    username.close();
+    password.close();
     super.onClose();
   }
 }

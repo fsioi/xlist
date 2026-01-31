@@ -26,9 +26,14 @@ class ThumbnailCache {
 
   Future<Directory?> get cacheDir async {
     try {
-      _cacheDir ??= await getTemporaryDirectory();
+      // 使用更持久的存储位置
+      _cacheDir ??= await getApplicationDocumentsDirectory();
       if (_cacheDir == null) {
-        return null;
+        // 如果无法获取应用文档目录，回退到临时目录
+        _cacheDir = await getTemporaryDirectory();
+        if (_cacheDir == null) {
+          return null;
+        }
       }
       final thumbnailDir = Directory(p.join(_cacheDir!.path, 'thumbnails'));
       if (!await thumbnailDir.exists()) {

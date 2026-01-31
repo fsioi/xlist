@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get_storage/get_storage.dart';
 
+import 'package:xlist/common/logger.dart';
 import 'package:xlist/services/dio_service.dart';
 import 'package:xlist/services/database_service.dart';
 import 'package:xlist/services/core_service.dart';
@@ -56,7 +57,10 @@ class Global {
       // 5. 配置平台特定设置
       _configurePlatformSettings();
 
-      // 6. 打印初始化状态
+      // 6. 配置日志开发模式
+      _configureLogging();
+
+      // 7. 打印初始化状态
       _printInitializationStatus();
 
       print('=== Global initialization completed ===');
@@ -184,6 +188,42 @@ class Global {
       } catch (e) {
         print('⚠ Error configuring iOS status bar: $e');
       }
+    }
+  }
+
+  // 配置日志开发模式
+  static void _configureLogging() {
+    print('\n--- Configuring logging ---');
+    
+    try {
+      // 强制启用调试日志，无论是否是debug模式
+      Logger.setDebugEnabled(true);
+      
+      // 启用文件日志
+      Logger.setFileLoggingEnabled(true);
+      
+      print('✓ Logging development mode enabled');
+      print('✓ Debug logs will be shown');
+      print('✓ File logging enabled');
+      print('✓ Log file path: ${Logger.getLogFilePath() ?? 'Not initialized'}');
+      
+      // 测试日志输出
+      StepLogger.start('日志系统测试');
+      StepLogger.step('输出调试日志');
+      Logger.d('Testing debug log output');
+      StepLogger.step('输出信息日志');
+      Logger.i('Testing info log output');
+      StepLogger.step('输出警告日志');
+      Logger.w('Testing warning log output');
+      StepLogger.step('输出错误日志');
+      Logger.e('Testing error log output');
+      StepLogger.step('输出详细日志');
+      Logger.v('Testing verbose log output');
+      StepLogger.end('日志系统测试', success: true);
+      
+      print('✓ Logging system initialized successfully');
+    } catch (e) {
+      print('⚠ Error configuring logging: $e');
     }
   }
 

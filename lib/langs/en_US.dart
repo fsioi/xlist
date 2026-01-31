@@ -14,6 +14,10 @@ const Map<String, String> en_US = {
   'pull_down_copy_link': 'Copy Link',
   'pull_down_download_file': 'Add to Download List',
   'pull_down_save_image': 'Save to Album',
+  'pull_down_properties': 'File Properties',
+  'pull_down_cut': 'Cut',
+  'pull_down_grid_layout': 'Grid Layout',
+  'pull_down_carousel_layout': 'Carousel Layout',
 
   // General
   'search': 'Search',
@@ -71,6 +75,7 @@ const Map<String, String> en_US = {
   'toast_switch_success': 'Switch success',
   'toast_upload_success': 'Upload success',
   'toast_upload_loading': 'Uploading...',
+  'toast_upload_partial_failure': 'Partial upload failed, success: {success}, fail: {fail}',
   'toast_download_unfinished': 'Download unfinished',
   'toast_get_user_info_fail': 'Get user info failed',
   'toast_current_play_file': 'Current play file',
@@ -80,6 +85,7 @@ const Map<String, String> en_US = {
   'toast_switch_loading': 'Switching...',
   'toast_switch_subtitle_fail': 'Switch subtitle failed',
   'toast_favorite_success': 'Added to Favorite',
+  'toast_add_favorite_success': 'Added to favorites',
 
   // Dialogs
   'dialog_prompt_title': 'Prompt',
@@ -106,9 +112,6 @@ const Map<String, String> en_US = {
   'add_server_toast_url_user_invalid':
       'Server address and username are invalid',
   'add_server_toast_save_success': 'Save success',
-  'add_server_dialog_2fa_title': '2FA Verification',
-  'add_server_dialog_2fa_hint': 'Please enter your OTP verification code',
-  'add_server_toast_2fa_error': '2FA verification failed',
   'add_server_section_header': 'Please enter server information',
   'add_server_section_footer':
       'The server address format is: https://example.com.\nPlease test whether the server address and username are correct before saving.',
@@ -122,8 +125,8 @@ const Map<String, String> en_US = {
 
   // Pages
   'homepage_title': 'File Manager',
-  'homepage_empty_server_title': 'Please create a Alist server',
-  'homepage_empty_server_help': 'Learn about Alist?',
+  'homepage_empty_server_title': 'Please create a WebDAV server',
+  'homepage_empty_server_help': 'Learn about WebDAV?',
   'homepage_empty_server_button': 'New Server',
   'directory_root_title': 'Select target folder',
   'directory_empty_description': 'No more directories!!!',
@@ -131,6 +134,8 @@ const Map<String, String> en_US = {
       'This type of file is not supported for opening, please add it to the download list\nAfter the download is complete, you can use other applications to open and preview',
   'video_switch_subtitle': 'Switch Subtitle',
   'video_switch_audio': 'Switch Audio',
+  'video_switch_subtitle_not_supported': 'Subtitle switching not supported',
+  'video_switch_audio_not_supported': 'Audio track switching not supported',
   'video_tab_introduction': 'Introduction',
   'video_tab_playlist': 'Playlist',
   'detail_dialog_password_title': 'Password',

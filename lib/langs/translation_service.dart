@@ -5,8 +5,8 @@ import 'en_US.dart';
 import 'zh_Hans.dart';
 
 class TranslationService extends Translations {
-  static Locale? get locale => Get.deviceLocale;
-  static final fallbackLocale = Locale('en', 'US');
+  static Locale? get locale => Locale('zh', 'Hans');
+  static final fallbackLocale = Locale('zh', 'Hans');
 
   @override
   Map<String, Map<String, String>> get keys => {

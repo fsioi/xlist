@@ -24,7 +24,7 @@ class ImagePreviewController extends GetxController {
   final imageUrls = <String>[].obs;
   final imageHeaders = <String, String>{}.obs;
   final userInfo = UserModel().obs; // 用户信息
-  final serverUrl = Get.find<UserStorage>().serverUrl.value;
+  final serverUrl = Get.find<CoreService>().currentServer.value?.url ?? '';
   // 添加布局模式状态
   final layoutMode = PreviewLayoutMode.carousel.obs;
   // 网格布局列数
@@ -41,61 +41,85 @@ class ImagePreviewController extends GetxController {
   late PageController pageController;
 
   @override
-  void onInit() async {
+  Future<void> onInit() async {
     super.onInit();
 
     // 过滤非图片
     objects = objects.where((o) => PreviewHelper.isImage(o.name!)).toList();
-    userInfo.value = await UserRepository.me();
-
-    // 初始化图片控制器
-    currentIndex.value = objects.indexWhere((e) => e.name == name);
-    pageController = PageController(initialPage: currentIndex.value);
+    userInfo.value = UserModel();
 
     // 获取对象信息
     ObjectModel object;
     try {
-      object = await ObjectRepository.get(path: '${path}${name}');
+      final fullPath = path == '/' ? '$path$name' : '$path/$name';
+      object = await ObjectRepository.get(path: fullPath);
     } catch (e) {
       print('Error getting object: $e');
-      return;
+      // 创建一个默认的object对象，避免后续代码崩溃
+      object = ObjectModel()
+        ..name = name
+        ..rawUrl = '';
     }
 
     // 获取请求头
-    if (object.provider != null && object.rawUrl != null) {
-      imageHeaders.value =
-          await DriverHelper.getHeaders(object.provider!, object.rawUrl!);
-    }
+    imageHeaders.value = DriverHelper.getWebDAVHeaders();
 
-    // 获取图片链接，对于115云盘使用rawUrl，其他使用getDownloadLink
-    if (object.provider != null && object.provider!.startsWith(Provider.Cloud115)) {
-      for (var i = 0; i < objects.length; i++) {
-        try {
-          final _response =
-              await ObjectRepository.get(path: '${path}${objects[i].name}');
-          if (_response.rawUrl != null) {
-            imageUrls.add(_response.rawUrl!);
-          }
-        } catch (e) {
-          print('Error getting image URL for ${objects[i].name}: $e');
+    // 获取图片链接
+    final urls = <String>[];
+    for (final o in objects) {
+      final fullPath = path == '/' ? '$path${o.name}' : '$path/${o.name}';
+      try {
+        // 尝试获取对象信息以获取正确的URL
+        final obj = await ObjectRepository.get(path: fullPath);
+        if (obj.rawUrl != null && obj.rawUrl!.isNotEmpty) {
+          urls.add(obj.rawUrl!);
+        } else {
+          // 如果没有rawUrl，使用CommonUtils.getDownloadLink
+          final downloadLink = CommonUtils.getDownloadLink(
+            path,
+            object: o,
+            userInfo: userInfo.value,
+          );
+          urls.add(downloadLink);
         }
-      }
-    } else {
-      imageUrls.value = objects.map((o) {
-        return CommonUtils.getDownloadLink(
+      } catch (e) {
+        // 出错时，使用CommonUtils.getDownloadLink
+        final downloadLink = CommonUtils.getDownloadLink(
           path,
           object: o,
           userInfo: userInfo.value,
         );
-      }).toList();
+        urls.add(downloadLink);
+      }
     }
+    imageUrls.value = urls;
+
+    // 初始化图片控制器
+    currentIndex.value = objects.indexWhere((e) => e.name == name);
+    // 确保currentIndex在有效范围内
+    if (currentIndex.value < 0 || currentIndex.value >= imageUrls.length) {
+      currentIndex.value = 0;
+    }
+    pageController = PageController(initialPage: currentIndex.value);
 
     // 加入最近浏览
     await CommonUtils.addRecent(object, path, name);
 
-    // 添加当前图片
-    if (imageUrls.isEmpty && object.rawUrl != null) {
-      imageUrls.add(object.rawUrl!);
+    // 添加当前图片（如果urls为空）
+    if (imageUrls.isEmpty) {
+      if (object.rawUrl != null && object.rawUrl!.isNotEmpty) {
+        imageUrls.add(object.rawUrl!);
+      } else {
+        // 尝试构建一个下载链接
+        final downloadLink = CommonUtils.getDownloadLink(
+          path,
+          object: object,
+          userInfo: userInfo.value,
+        );
+        imageUrls.add(downloadLink);
+      }
+      // 重新初始化页面控制器
+      pageController = PageController(initialPage: 0);
     }
   }
 

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:get/get.dart';
+import 'package:jiffy/jiffy.dart';
 import 'package:path/path.dart' as p;
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
@@ -11,6 +12,7 @@ import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:xlist/models/index.dart';
 import 'package:xlist/models/user.dart'; // 导入 UserModel
 import 'package:xlist/common/index.dart';
+import 'package:xlist/services/index.dart';
 import 'package:xlist/storages/index.dart';
 import 'package:xlist/storages/user_storage.dart'; // 导入 UserStorage
 import 'package:xlist/constants/index.dart';
@@ -20,8 +22,26 @@ import 'package:xlist/pages/detail/index.dart';
 import 'package:xlist/pages/homepage/index.dart';
 import 'package:xlist/pages/directory/index.dart';
 import 'package:xlist/helper/preview_helper.dart';
+import 'package:xlist/helper/download_helper.dart';
+
+/// 剪贴板操作类型
+enum ClipboardOperation {
+  none,
+  cut,
+  copy,
+}
 
 class ObjectHelper {
+  /// 存储剪切或复制的文件信息
+  static Map<String, dynamic>? _clipboardData;
+  static ClipboardOperation _clipboardOperation = ClipboardOperation.none;
+  
+  /// 对外暴露剪贴板数据
+  static Map<String, dynamic>? get clipboardData => _clipboardData;
+  
+  /// 对外暴露剪贴板操作类型
+  static ClipboardOperation get clipboardOperation => _clipboardOperation;
+
   /// 文件点击事件
   /// [path] 文件路径
   /// [type] 文件类型
@@ -99,51 +119,6 @@ class ObjectHelper {
     }
   }
 
-  /// 重命名
-  /// [path] 文件路径
-  /// [object] 文件对象
-  static Future<void> rename({
-    required String path,
-    required ObjectModel object,
-    required String source,
-    required String pageTag,
-  }) async {
-    final data = await showTextInputDialog(
-      context: Get.context!,
-      title: 'dialog_rename_title'.tr,
-      message: 'dialog_rename_message'.tr,
-      okLabel: 'confirm'.tr,
-      cancelLabel: 'cancel'.tr,
-      textFields: [
-        DialogTextField(
-          hintText: 'dialog_rename_hint'.tr,
-          initialText: object.name,
-        ),
-      ],
-    );
-    if (data == null) return;
-    if (data.isEmpty) return;
-
-    // 重命名
-    try {
-      SmartDialog.showLoading();
-      final response = await ObjectRepository.rename(
-          path: '${path}${object.name}', name: data.first);
-      if (response['code'] != HttpStatus.ok) {
-        throw response['message'];
-      }
-
-      SmartDialog.dismiss();
-      SmartDialog.showToast('toast_rename_success'.tr);
-
-      // 刷新列表
-      refreshObjectList(source: source, pageTag: pageTag);
-    } catch (e) {
-      SmartDialog.dismiss();
-      SmartDialog.showToast(e.toString());
-    }
-  }
-
   /// 复制链接
   /// [path] 文件路径
   /// [object] 文件对象
@@ -152,121 +127,28 @@ class ObjectHelper {
     required ObjectModel object,
     required UserModel userInfo,
   }) {
+    final serverUrl = Get.find<CoreService>().currentServer.value?.url ?? '';
+    
     if (object.isDir == true) {
-      final serverUrl = Get.find<UserStorage>().serverUrl.value;
-      Clipboard.setData(
-          ClipboardData(text: '${serverUrl}${path}${object.name}'));
+      // 为目录构建完整的URL并编码
+      String fullPath = '${path}${object.name}';
+      String encodedPath = '';
+      fullPath.split('/').forEach((v) {
+        if (v.isNotEmpty) encodedPath += '/${Uri.encodeComponent(v)}';
+      });
+      String fullUrl = '${serverUrl}${encodedPath}';
+      Clipboard.setData(ClipboardData(text: fullUrl));
     } else {
-      Clipboard.setData(ClipboardData(
-        text: CommonUtils.getDownloadLink(
-          path,
-          object: object,
-          userInfo: userInfo,
-        ),
-      ));
+      // 为文件使用 getDownloadLink 方法，确保返回完整的URL
+      String downloadLink = CommonUtils.getDownloadLink(
+        path,
+        object: object,
+        userInfo: userInfo,
+      );
+      Clipboard.setData(ClipboardData(text: downloadLink));
     }
 
     SmartDialog.showToast('toast_copy_success'.tr);
-  }
-
-  /// 移动
-  /// [srcDir] 文件路径
-  /// [name] 文件对象
-  /// [dstDir] 目标路径
-  static Future<void> move({
-    required String srcDir,
-    required String dstDir,
-    required String name,
-    required String source,
-    required String pageTag,
-  }) async {
-    try {
-      SmartDialog.showLoading();
-      final response = await ObjectRepository.move(
-          srcDir: srcDir, dstDir: dstDir, name: name);
-      if (response['code'] != HttpStatus.ok) {
-        throw response['message'];
-      }
-
-      SmartDialog.dismiss();
-      SmartDialog.showToast('toast_move_success'.tr);
-
-      // 刷新列表
-      refreshObjectList(source: source, pageTag: pageTag);
-    } catch (e) {
-      SmartDialog.dismiss();
-      SmartDialog.showToast(e.toString());
-    }
-  }
-
-  /// 复制
-  /// [srcDir] 文件路径
-  /// [dstDir] 目标路径
-  /// [name] 文件对象
-  /// [source] 来源
-  /// [pageTag] 页面标签
-  static Future<void> copy({
-    required String srcDir,
-    required String dstDir,
-    required String name,
-    required String source,
-    required String pageTag,
-  }) async {
-    try {
-      SmartDialog.showLoading();
-      final response = await ObjectRepository.copy(
-          srcDir: srcDir, dstDir: dstDir, name: name);
-      if (response['code'] != HttpStatus.ok) {
-        throw response['message'];
-      }
-
-      SmartDialog.dismiss();
-      SmartDialog.showToast('toast_copy_success'.tr);
-
-      // 刷新列表
-      refreshObjectList(source: source, pageTag: pageTag);
-    } catch (e) {
-      SmartDialog.dismiss();
-      SmartDialog.showToast(e.toString());
-    }
-  }
-
-  /// 删除
-  /// [path] 文件路径
-  /// [name] 文件名称
-  /// [source] 来源
-  /// [pageTag] 页面标签
-  static Future<void> remove({
-    required String path,
-    required String name,
-    required String source,
-    required String pageTag,
-  }) async {
-    final ok = await showOkCancelAlertDialog(
-      context: Get.context!,
-      title: 'dialog_prompt_title'.tr,
-      message: 'dialog_remove_message'.tr,
-      okLabel: 'confirm'.tr,
-      cancelLabel: 'cancel'.tr,
-    );
-    if (ok != OkCancelResult.ok) return;
-
-    try {
-      SmartDialog.showLoading();
-      final response = await ObjectRepository.remove(path: path, name: name);
-      if (response['code'] != HttpStatus.ok) {
-        throw response['message'];
-      }
-
-      SmartDialog.dismiss();
-      SmartDialog.showToast('toast_remove_success'.tr);
-
-      // 刷新列表
-      refreshObjectList(source: source, pageTag: pageTag);
-    } catch (e) {
-      SmartDialog.dismiss();
-      SmartDialog.showToast(e.toString());
-    }
   }
 
   /// 新建文件夹
@@ -488,6 +370,428 @@ class ObjectHelper {
       }
     } else {
       // User canceled the picker
+    }
+  }
+
+  /// 显示上下文菜单
+  /// [path] 文件路径
+  /// [object] 文件对象
+  /// [objects] 文件列表
+  /// [source] 来源
+  /// [pageTag] 页面标签
+  static Future<void> showContextMenu({
+    required String path,
+    required ObjectModel object,
+    required List<ObjectModel> objects,
+    required String source,
+    required String pageTag,
+  }) async {
+    try {
+      final actions = <SheetAction>[];
+
+      // 添加属性选项
+      actions.add(SheetAction(
+        label: '文件属性',
+        key: 'properties',
+      ));
+
+      // 添加下载选项
+      actions.add(SheetAction(
+        label: '下载',
+        key: 'download',
+      ));
+
+      // 添加复制链接选项
+      actions.add(SheetAction(
+        label: '复制链接',
+        key: 'copyLink',
+      ));
+
+      // 添加移动选项
+      actions.add(SheetAction(
+        label: '移动',
+        key: 'move',
+      ));
+
+      // 添加复制选项
+      actions.add(SheetAction(
+        label: '复制',
+        key: 'copy',
+      ));
+
+      // 添加剪切选项
+      actions.add(SheetAction(
+        label: '剪切',
+        key: 'cut',
+      ));
+
+      // 添加删除选项
+      actions.add(SheetAction(
+        label: '删除',
+        key: 'delete',
+        isDestructiveAction: true,
+      ));
+
+      // 添加重命名选项
+      actions.add(SheetAction(
+        label: '重命名',
+        key: 'rename',
+      ));
+
+      // 添加粘贴选项（如果剪贴板有数据）
+      if (_clipboardData != null && _clipboardOperation != ClipboardOperation.none) {
+        actions.add(SheetAction(
+          label: '粘贴',
+          key: 'paste',
+        ));
+      }
+
+      final value = await showModalActionSheet(
+        context: Get.context!,
+        actions: actions,
+        cancelLabel: '取消',
+      );
+
+      if (value == null) return;
+
+      switch (value) {
+        case 'properties':
+          await showFileProperties(object);
+          break;
+        case 'download':
+          // 下载文件
+          await DownloadHelper.file(
+            path,
+            object.name!,
+            object.type!,
+            object.size ?? 0,
+          );
+          break;
+        case 'copyLink':
+          // 复制链接
+          final userInfo = UserModel();
+          copyLink(
+            path,
+            object: object,
+            userInfo: userInfo,
+          );
+          break;
+        case 'move':
+          // 实现目录选择
+          final selectedPath = await _selectDirectory(path);
+          if (selectedPath != null && selectedPath != path) {
+            await move(
+              srcDir: path,
+              dstDir: selectedPath,
+              name: object.name!,
+              source: source,
+              pageTag: pageTag,
+            );
+          }
+          break;
+        case 'copy':
+          // 实现目录选择
+          final selectedPath = await _selectDirectory(path);
+          if (selectedPath != null && selectedPath != path) {
+            await copy(
+              srcDir: path,
+              dstDir: selectedPath,
+              name: object.name!,
+              source: source,
+              pageTag: pageTag,
+            );
+          }
+          break;
+        case 'cut':
+          await cut(
+            path: path,
+            object: object,
+          );
+          break;
+        case 'paste':
+          await paste(
+            path: path,
+            source: source,
+            pageTag: pageTag,
+          );
+          break;
+        case 'delete':
+          await remove(
+            path: path,
+            name: object.name!,
+            source: source,
+            pageTag: pageTag,
+          );
+          break;
+        case 'rename':
+          await rename(
+            path: path,
+            object: object,
+            source: source,
+            pageTag: pageTag,
+          );
+          break;
+      }
+    } catch (e) {
+      print('Error showing context menu: $e');
+      SmartDialog.showToast('菜单显示失败');
+    }
+  }
+
+  /// 选择目录
+  static Future<String?> _selectDirectory(String currentPath) async {
+    final result = await Get.toNamed(
+      Routes.DIRECTORY,
+      arguments: {
+        'path': currentPath,
+        'selectMode': true,
+      },
+    );
+    return result;
+  }
+
+  /// 显示文件属性
+  /// [object] 文件对象
+  static Future<void> showFileProperties(ObjectModel object) async {
+    final sizeText = object.isDir! ? '文件夹' : CommonUtils.formatFileSize(object.size!);
+    final typeText = object.isDir! ? '目录' : '文件';
+    final modifiedText = object.modified != null 
+        ? Jiffy.parseFromDateTime(object.modified!).format(pattern: 'yyyy/MM/dd HH:mm:ss') 
+        : '未知';
+
+    await showAlertDialog(
+      context: Get.context!,
+      title: '文件属性',
+      message: '名称: ${object.name}\n类型: $typeText\n大小: $sizeText\n修改时间: $modifiedText',
+      actions: [
+        AlertDialogAction(label: '确定', key: 'ok'),
+      ],
+    );
+  }
+
+  /// 剪切文件
+  /// [path] 文件路径
+  /// [object] 文件对象
+  static Future<void> cut({
+    required String path,
+    required ObjectModel object,
+  }) async {
+    _clipboardData = {
+      'path': path,
+      'name': object.name,
+      'isDir': object.isDir,
+    };
+    _clipboardOperation = ClipboardOperation.cut;
+    SmartDialog.showToast('剪切功能已准备就绪');
+    print('剪切文件: ${object.name} 从路径: $path');
+  }
+
+  /// 粘贴文件
+  /// [path] 目标路径
+  /// [source] 来源
+  /// [pageTag] 页面标签
+  static Future<void> paste({
+    required String path,
+    required String source,
+    required String pageTag,
+  }) async {
+    if (_clipboardData == null || _clipboardOperation == ClipboardOperation.none) {
+      SmartDialog.showToast('剪贴板为空');
+      return;
+    }
+
+    try {
+      SmartDialog.showLoading();
+      final srcPath = _clipboardData!['path'] as String;
+      final fileName = _clipboardData!['name'] as String;
+      final isDir = _clipboardData!['isDir'] as bool;
+
+      dynamic response;
+      if (_clipboardOperation == ClipboardOperation.cut) {
+        // 移动操作
+        response = await ObjectRepository.move(
+          srcDir: srcPath,
+          dstDir: path,
+          name: fileName,
+        );
+        if (response != null && response['code'] == 200) {
+          SmartDialog.showToast('移动成功');
+          _clipboardData = null;
+          _clipboardOperation = ClipboardOperation.none;
+        } else {
+          throw Exception('移动失败');
+        }
+      } else if (_clipboardOperation == ClipboardOperation.copy) {
+        // 复制操作
+        response = await ObjectRepository.copy(
+          srcDir: srcPath,
+          dstDir: path,
+          name: fileName,
+        );
+        if (response != null && response['code'] == 200) {
+          SmartDialog.showToast('复制成功');
+        } else {
+          throw Exception('复制失败');
+        }
+      }
+
+      // 刷新列表
+      refreshObjectList(source: source, pageTag: pageTag);
+    } catch (e) {
+      SmartDialog.showToast(e.toString());
+    } finally {
+      SmartDialog.dismiss();
+    }
+  }
+
+  /// 复制文件
+  /// [srcDir] 源目录
+  /// [dstDir] 目标目录
+  /// [name] 文件名
+  /// [source] 来源
+  /// [pageTag] 页面标签
+  static Future<void> copy({
+    required String srcDir,
+    required String dstDir,
+    required String name,
+    required String source,
+    required String pageTag,
+  }) async {
+    try {
+      SmartDialog.showLoading();
+      final response = await ObjectRepository.copy(
+        srcDir: srcDir,
+        dstDir: dstDir,
+        name: name,
+      );
+      if (response != null && response['code'] == 200) {
+        SmartDialog.showToast('复制成功');
+        // 刷新列表
+        refreshObjectList(source: source, pageTag: pageTag);
+      } else {
+        throw Exception('复制失败');
+      }
+    } catch (e) {
+      SmartDialog.dismiss();
+      SmartDialog.showToast(e.toString());
+    }
+  }
+
+  /// 移动文件
+  /// [srcDir] 源目录
+  /// [dstDir] 目标目录
+  /// [name] 文件名
+  /// [source] 来源
+  /// [pageTag] 页面标签
+  static Future<void> move({
+    required String srcDir,
+    required String dstDir,
+    required String name,
+    required String source,
+    required String pageTag,
+  }) async {
+    try {
+      SmartDialog.showLoading();
+      final response = await ObjectRepository.move(
+        srcDir: srcDir,
+        dstDir: dstDir,
+        name: name,
+      );
+      if (response != null && response['code'] == 200) {
+        SmartDialog.showToast('移动成功');
+        // 刷新列表
+        refreshObjectList(source: source, pageTag: pageTag);
+      } else {
+        throw Exception('移动失败');
+      }
+    } catch (e) {
+      SmartDialog.dismiss();
+      SmartDialog.showToast(e.toString());
+    }
+  }
+
+  /// 删除文件
+  /// [path] 文件路径
+  /// [name] 文件名
+  /// [source] 来源
+  /// [pageTag] 页面标签
+  static Future<void> remove({
+    required String path,
+    required String name,
+    required String source,
+    required String pageTag,
+  }) async {
+    final ok = await showOkCancelAlertDialog(
+      context: Get.context!,
+      title: 'dialog_prompt_title'.tr,
+      message: 'dialog_remove_message'.tr,
+      okLabel: 'confirm'.tr,
+      cancelLabel: 'cancel'.tr,
+    );
+    if (ok != OkCancelResult.ok) return;
+
+    try {
+      SmartDialog.showLoading();
+      final response = await ObjectRepository.remove(
+        path: path,
+        name: name,
+      );
+      if (response != null && response['code'] == 200) {
+        SmartDialog.showToast('删除成功');
+        // 刷新列表
+        refreshObjectList(source: source, pageTag: pageTag);
+      } else {
+        throw Exception('删除失败');
+      }
+    } catch (e) {
+      SmartDialog.dismiss();
+      SmartDialog.showToast(e.toString());
+    }
+  }
+
+  /// 重命名文件
+  /// [path] 文件路径
+  /// [object] 文件对象
+  /// [source] 来源
+  /// [pageTag] 页面标签
+  static Future<void> rename({
+    required String path,
+    required ObjectModel object,
+    required String source,
+    required String pageTag,
+  }) async {
+    final data = await showTextInputDialog(
+      context: Get.context!,
+      title: 'dialog_rename_title'.tr,
+      message: 'dialog_rename_message'.tr,
+      okLabel: 'confirm'.tr,
+      cancelLabel: 'cancel'.tr,
+      textFields: [
+        DialogTextField(
+          hintText: 'dialog_rename_hint'.tr,
+          initialText: object.name,
+        ),
+      ],
+    );
+    if (data == null) return;
+    if (data.isEmpty) return;
+
+    try {
+      SmartDialog.showLoading();
+      final response = await ObjectRepository.rename(
+        path: '$path/${object.name}',
+        name: data.first,
+      );
+      if (response != null && response['code'] == 200) {
+        SmartDialog.showToast('重命名成功');
+        // 刷新列表
+        refreshObjectList(source: source, pageTag: pageTag);
+      } else {
+        throw Exception('重命名失败');
+      }
+    } catch (e) {
+      SmartDialog.dismiss();
+      SmartDialog.showToast(e.toString());
     }
   }
 }

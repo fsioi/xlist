@@ -73,7 +73,7 @@ class AudioPlayerController extends GetxController
 
     // 过滤非音频
     objects = objects.where((o) => PreviewHelper.isAudio(o.name!)).toList();
-    userInfo.value = await UserRepository.me(); // 获取用户信息
+    userInfo.value = UserModel();
 
     // 当前播放文件名
     currentName.value = name;
@@ -89,8 +89,7 @@ class AudioPlayerController extends GetxController
     if (file.isEmpty) {
       try {
         object.value = await ObjectRepository.get(path: '${path}${name}');
-        httpHeaders.value = await DriverHelper.getHeaders(
-            object.value.provider, object.value.rawUrl);
+        httpHeaders.value = DriverHelper.getWebDAVHeaders();
       } catch (e) {
         SmartDialog.showToast(e.toString());
         return;

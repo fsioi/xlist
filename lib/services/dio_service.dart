@@ -23,10 +23,10 @@ class DioService extends GetxService {
   }
 
   // 连接超时时间
-  static const Duration CONNECT_TIMEOUT = Duration(seconds: 10 * 1000);
+  static const Duration CONNECT_TIMEOUT = Duration(seconds: 10);
 
   // 响应超时时间 5 min
-  static const Duration RECEIVE_TIMEOUT = Duration(seconds: 300 * 1000);
+  static const Duration RECEIVE_TIMEOUT = Duration(seconds: 300);
 
   // Init
   Future<DioService> init() async {
@@ -60,11 +60,17 @@ class DioInterceptors extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     try {
-      final token = Get.find<UserStorage>().token.value;
-      options.headers.addAll(
-        Map.from(DioService.to.defaultHeaders)
-          ..addAll({HttpHeaders.authorizationHeader: token}),
-      );
+      // 只在没有设置Authorization头的情况下添加token
+      if (!options.headers.containsKey(HttpHeaders.authorizationHeader)) {
+        final token = Get.find<UserStorage>().token.value;
+        if (token.isNotEmpty) {
+          options.headers.addAll(
+            Map.from(DioService.to.defaultHeaders)
+              ..addAll({HttpHeaders.authorizationHeader: token}),
+          );
+        }
+      }
+      // 如果已经有Authorization头，保持不变（比如WebDAV的Basic认证）
     } catch (e) {
       print('Error adding headers: $e');
     }

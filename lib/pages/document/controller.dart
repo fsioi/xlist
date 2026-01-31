@@ -60,9 +60,8 @@ class DocumentController extends GetxController {
 
     // 获取文档地址
     object.value = await ObjectRepository.get(path: '${path}${name}');
-    userInfo.value = await UserRepository.me(); // 获取用户信息
-    httpHeaders.value = await DriverHelper.getHeaders(
-        object.value.provider, object.value.rawUrl);
+    userInfo.value = UserModel();
+    httpHeaders.value = DriverHelper.getWebDAVHeaders();
 
     // 如果是代码类型文件
     if (PreviewHelper.isCode(name) && !PreviewHelper.isHtml(name)) {

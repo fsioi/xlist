@@ -13,7 +13,7 @@ class PageSource {
 
 /// 服务器类型
 class ServerType {
-  static const ALIST = 0;
+  static const WEBDAV = 0;
   static const FTP = 1;
   static const SFTP = 2;
   static const SMB = 3;

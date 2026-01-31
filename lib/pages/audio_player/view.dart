@@ -342,99 +342,111 @@ class AudioPlayerPage extends GetView<AudioPlayerController> {
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
       navigationBar: _buildNavigationBar(),
-      child: DefaultTabController(
-        length: 2,
-        child: Column(
-          children: [
-            Container(
-              height: 1150.h,
-              child: Obx(
-                () => TabBarView(
-                  controller: controller.tabController,
-                  children: [_buildSingleFile(), _buildPlaylist()],
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Get.isDarkMode ? Colors.black : Color(0xFFF5F5F5),
+              Get.isDarkMode ? Color(0xFF1A1A1A) : Color(0xFFE8E8E8),
+            ],
+          ),
+        ),
+        child: DefaultTabController(
+          length: 2,
+          child: Column(
+            children: [
+              Container(
+                height: 1150.h,
+                child: Obx(
+                  () => TabBarView(
+                    controller: controller.tabController,
+                    children: [_buildSingleFile(), _buildPlaylist()],
+                  ),
                 ),
               ),
-            ),
-            SizedBox(height: 50.h),
-            Container(
-              height: 30.h,
-              padding: EdgeInsets.symmetric(horizontal: 50.w),
-              child: Obx(() => _buildFijkSlider()),
-            ),
-            _buildDuration(),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildControlButton(),
-                  SizedBox(height: 50.h),
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 100.w),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Obx(
-                          () => CupertinoButton(
-                            alignment: Alignment.centerLeft,
-                            child: Icon(
-                              PlayMode.getIcon(controller.playMode.value),
-                              size: CommonUtils.isPad ? 30 : 70.sp,
-                              color: Get.isDarkMode
-                                  ? Colors.white
-                                  : Colors.black87,
-                            ),
-                            onPressed: () {
-                              controller.playMode.value =
-                                  controller.playMode.value == PlayMode.SHUFFLE
-                                      ? PlayMode.LIST_LOOP
-                                      : controller.playMode.value + 1;
-                            },
-                          ),
-                        ),
-                        Obx(
-                          () => CupertinoButton(
-                            alignment: Alignment.center,
-                            child: Icon(
-                              CupertinoIcons.list_bullet,
-                              size: CommonUtils.isPad ? 30 : 70.sp,
-                              color: controller.isPlaylist.value
-                                  ? Get.theme.primaryColor
-                                  : Get.isDarkMode
-                                      ? Colors.white
-                                      : Colors.black87,
-                            ),
-                            onPressed: () {
-                              controller.isPlaylist.value =
-                                  !controller.isPlaylist.value;
-                              controller.tabController.index =
-                                  controller.isPlaylist.value ? 1 : 0;
-                            },
-                          ),
-                        ),
-                        Obx(
-                          () => CupertinoButton(
-                            alignment: Alignment.centerRight,
-                            child: Icon(
-                              CupertinoIcons.clock,
-                              size: CommonUtils.isPad ? 30 : 70.sp,
-                              color:
-                                  controller.timerDuration.value.inSeconds > 0
-                                      ? Get.theme.primaryColor
-                                      : Get.isDarkMode
-                                          ? Colors.white
-                                          : Colors.black87,
-                            ),
-                            onPressed: () => controller.timedShutdown(),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+              SizedBox(height: 50.h),
+              Container(
+                height: 30.h,
+                padding: EdgeInsets.symmetric(horizontal: 50.w),
+                child: Obx(() => _buildFijkSlider()),
               ),
-            ),
-          ],
+              _buildDuration(),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _buildControlButton(),
+                    SizedBox(height: 50.h),
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 100.w),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Obx(
+                            () => CupertinoButton(
+                              alignment: Alignment.centerLeft,
+                              child: Icon(
+                                PlayMode.getIcon(controller.playMode.value),
+                                size: CommonUtils.isPad ? 30 : 70.sp,
+                                color: Get.isDarkMode
+                                    ? Colors.white
+                                    : Colors.black87,
+                              ),
+                              onPressed: () {
+                                controller.playMode.value =
+                                    controller.playMode.value == PlayMode.SHUFFLE
+                                        ? PlayMode.LIST_LOOP
+                                        : controller.playMode.value + 1;
+                              },
+                            ),
+                          ),
+                          Obx(
+                            () => CupertinoButton(
+                              alignment: Alignment.center,
+                              child: Icon(
+                                CupertinoIcons.list_bullet,
+                                size: CommonUtils.isPad ? 30 : 70.sp,
+                                color: controller.isPlaylist.value
+                                    ? Get.theme.primaryColor
+                                    : Get.isDarkMode
+                                        ? Colors.white
+                                        : Colors.black87,
+                              ),
+                              onPressed: () {
+                                controller.isPlaylist.value =
+                                    !controller.isPlaylist.value;
+                                controller.tabController.index =
+                                    controller.isPlaylist.value ? 1 : 0;
+                              },
+                            ),
+                          ),
+                          Obx(
+                            () => CupertinoButton(
+                              alignment: Alignment.centerRight,
+                              child: Icon(
+                                CupertinoIcons.clock,
+                                size: CommonUtils.isPad ? 30 : 70.sp,
+                                color:
+                                    controller.timerDuration.value.inSeconds > 0
+                                        ? Get.theme.primaryColor
+                                        : Get.isDarkMode
+                                            ? Colors.white
+                                            : Colors.black87,
+                              ),
+                              onPressed: () => controller.timedShutdown(),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

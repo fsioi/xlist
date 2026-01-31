@@ -1,4 +1,8 @@
+import 'dart:convert';
+import 'package:get/get.dart';
 import 'package:xlist/constants/index.dart';
+import 'package:xlist/storages/index.dart';
+import 'package:xlist/services/index.dart';
 
 class DriverHelper {
   /// 默认请求头
@@ -31,5 +35,22 @@ class DriverHelper {
     }
 
     return Map.from(DEFAULT_HEADERS)..addAll(headers);
+  }
+
+  /// 获取WebDAV认证头
+  static Map<String, String> getWebDAVHeaders() {
+    try {
+      final currentServer = Get.find<CoreService>().currentServer.value;
+      final username = currentServer?.username ?? '';
+      final password = currentServer?.password ?? '';
+      final authHeader = 'Basic ${base64Encode(utf8.encode('$username:$password'))}';
+      
+      return {
+        'Authorization': authHeader,
+        ...DEFAULT_HEADERS,
+      };
+    } catch (e) {
+      return DEFAULT_HEADERS;
+    }
   }
 }

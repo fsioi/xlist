@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
@@ -9,11 +10,10 @@ import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:xlist/common/index.dart';
 import 'package:xlist/helper/index.dart';
 import 'package:xlist/storages/index.dart';
-import 'package:xlist/storages/user_storage.dart'; // 导入 UserStorage
+import 'package:xlist/storages/user_storage.dart';
 import 'package:xlist/services/index.dart';
 import 'package:xlist/constants/index.dart';
 import 'package:xlist/repositorys/index.dart';
-import 'package:xlist/repositorys/user_repository.dart';
 import 'package:xlist/database/entity/index.dart';
 
 class AddServerBottomSheet extends StatefulWidget {
@@ -28,7 +28,6 @@ class _AddServerBottomSheetState extends State<AddServerBottomSheet> {
   TextEditingController _usernameController = TextEditingController();
   TextEditingController _passwordController = TextEditingController();
 
-  // 是否是有效的服务器地址
   bool _isUrlValid = false;
   ServerEntity? _server;
   List<ServerEntity> _serverList = [];
@@ -36,42 +35,46 @@ class _AddServerBottomSheetState extends State<AddServerBottomSheet> {
   @override
   void initState() {
     super.initState();
-    _getServerList(); // 获取服务器列表
+    _getServerList();
   }
 
-  // 获取服务器列表
   void _getServerList() async {
     _serverList = await DatabaseService.to.database.serverDao.findAllServer();
     setState(() {});
   }
 
-  /// 测试匿名用户
   Future<bool> _testGuestUser({bool showToast = true}) async {
     String url = _urlController.text.trim();
 
-    // 去除最后一个 /
     if (url.endsWith('/')) url = url.substring(0, url.length - 1);
 
-    // 判断是否是 http 或者 https 开头
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
       try {
-        // 尝试 https
-        await Dio().get('https://${url}/api/me');
+        await Dio().get('https://$url/');
         url = 'https://$url';
       } catch (e) {
-        // 如果 https 失败，则使用 http
         url = 'http://$url';
       }
       _urlController.text = url;
     }
 
-    // 获取匿名用户信息
     try {
-      final response = await Dio().get('${url}/api/me');
-      if (response.data['code'] == 200) {
+      final response = await Dio().get(
+        url,
+        options: Options(
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          },
+          validateStatus: (status) {
+            return status! < 500;
+          },
+        ),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 301 || response.statusCode == 302) {
         _isUrlValid = true;
         _server = ServerEntity(
-            url: url, type: ServerType.ALIST, username: 'guest', password: '');
+            url: url, type: ServerType.WEBDAV, username: '', password: '');
       } else {
         _isUrlValid = false;
       }
@@ -85,116 +88,102 @@ class _AddServerBottomSheetState extends State<AddServerBottomSheet> {
           ? SmartDialog.showToast('add_server_toast_pass'.tr)
           : SmartDialog.showToast('add_server_toast_anonymous_fail'.tr);
 
-    // 返回是否有效
     return _isUrlValid;
   }
 
-  /// 测试服务器地址和用户名
   Future<bool> _testUrlAndUser({bool showToast = true}) async {
     try {
       String url = _urlController.text.trim();
       String username = _usernameController.text.trim();
       String password = _passwordController.text.trim();
 
-      // 检查是否填写完整
       if (url.isEmpty) {
         if (showToast) SmartDialog.showToast('add_server_toast_url_empty'.tr);
         return false;
       }
 
-      // 如果没有填用户名
       if (username.isEmpty && password.isEmpty) {
         return _testGuestUser(showToast: showToast);
       }
 
-      // 去除最后一个 /
       if (url.endsWith('/')) url = url.substring(0, url.length - 1);
 
-      // 判断是否是 http 或者 https 开头
       if (!url.startsWith('http://') && !url.startsWith('https://')) {
         try {
-          // 尝试 https
-          await Dio().post('https://${url}/api/auth/login', data: {'username': username, 'password': password});
+          await Dio().post('https://$url/api/auth/login', data: {'username': username, 'password': password});
           url = 'https://$url';
         } catch (e) {
-          // 如果 https 失败，则使用 http
           url = 'http://$url';
         }
         _urlController.text = url;
       }
 
-      // 登录测试
-      Response response = await Dio().post(
-        '${url}/api/auth/login',
-        data: {'username': username, 'password': password},
-      );
-
-      // 2FA 验证
-      if (response.data['code'] == 402) {
-        SmartDialog.dismiss();
-        final data = await showTextInputDialog(
-          context: Get.context!,
-          title: 'add_server_dialog_2fa_title'.tr,
-          okLabel: 'confirm'.tr,
-          cancelLabel: 'cancel'.tr,
-          textFields: [
-            DialogTextField(hintText: 'add_server_dialog_2fa_hint'.tr),
-          ],
-        );
-        if (data == null || data.isEmpty) return false;
-        if (data.first.isEmpty) return false;
-
-        // 重新登录
-        SmartDialog.showLoading();
-        response = await Dio().post('${url}/api/auth/login', data: {
-          'username': username,
-          'password': password,
-          'otp_code': data.first
-        });
-
-        // 2FA 验证失败
-        if (response.data['code'] == 402) {
-          throw Exception('add_server_toast_2fa_error'.tr);
+      // 直接使用WebDAV协议测试连接
+      try {
+        String webDavUrl = url;
+        if (!webDavUrl.endsWith('/')) {
+          webDavUrl += '/';
         }
+
+        final authHeader = 'Basic ${base64Encode(utf8.encode('$username:$password'))}';
+
+        final response = await Dio().request(
+          webDavUrl,
+          options: Options(
+            method: 'PROPFIND',
+            headers: {
+              'Authorization': authHeader,
+              'Depth': '0',
+              'Content-Type': 'application/xml',
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            },
+            validateStatus: (status) {
+              return status! < 500;
+            },
+            connectTimeout: Duration(seconds: 10),
+            receiveTimeout: Duration(seconds: 30),
+          ),
+          data: '''<?xml version="1.0" encoding="utf-8"?>
+<propfind xmlns="DAV:">
+  <prop>
+    <getcontentlength/>
+    <getlastmodified/>
+    <resourcetype/>
+  </prop>
+</propfind>''',
+        );
+
+        if (response.statusCode == 207 || response.statusCode == 200) {
+          _isUrlValid = true;
+          _server = ServerEntity(
+            url: url,
+            type: ServerType.WEBDAV,
+            username: username,
+            password: password,
+          );
+
+          if (_serverList.isEmpty && !showToast) {
+            Get.find<UserStorage>().serverUrl.value = url;
+            Get.find<UserStorage>().username.value = username;
+            Get.find<UserStorage>().password.value = password;
+
+            Get.find<DioService>().setBaseUrl(url);
+          }
+        } else if (response.statusCode == 401 || response.statusCode == 403) {
+          throw Exception('认证失败，请检查用户名和密码');
+        } else {
+          throw Exception('连接失败，请检查服务器地址是否正确');
+        }
+      } catch (webdavError) {
+        throw Exception('连接失败，请检查服务器信息: $webdavError');
       }
-
-      if (response.data['code'] != 200) {
-        throw Exception(response.data['message']);
-      }
-
-      // 获取 token
-      final token = response.data['data']['token'];
-
-      // 如果是第一个服务器，保存 token
-      if (_serverList.isEmpty && !showToast && token != null) {
-        Get.find<UserStorage>().token.value = token;
-        Get.find<UserStorage>().serverUrl.value = url;
-
-        // 设置DioService的baseUrl
-        Get.find<DioService>().setBaseUrl(url);
-
-        // 获取用户信息
-        final userInfo = await UserRepository.me();
-        Get.find<UserStorage>().id.value = userInfo.id.toString();
-      }
-
-      _isUrlValid = token != null;
-      _server = ServerEntity(
-        url: url,
-        type: ServerType.ALIST,
-        username: username,
-        password: password,
-      );
     } catch (e) {
       String errorMessage;
-      if (e.toString().contains('401')) {
-        // 认证失败，显示更友好的错误消息
+      if (e.toString().contains('401') || e.toString().contains('403')) {
         errorMessage = '认证失败，请检查用户名和密码';
       } else if (e.toString().contains('SocketException') || e.toString().contains('Connection refused')) {
-        // 连接失败，显示更友好的错误消息
         errorMessage = '连接失败，请检查服务器地址是否正确';
       } else {
-        // 其他错误，显示简洁的错误消息
         errorMessage = '测试失败，请检查服务器信息';
       }
       SmartDialog.showToast(errorMessage);
@@ -208,11 +197,9 @@ class _AddServerBottomSheetState extends State<AddServerBottomSheet> {
           ? SmartDialog.showToast('add_server_toast_pass'.tr)
           : SmartDialog.showToast('add_server_toast_url_user_invalid'.tr);
 
-    // 返回是否有效
     return _isUrlValid;
   }
 
-  /// 保存服务器信息
   void _saveServer() async {
     SmartDialog.showLoading();
     if (!await _testUrlAndUser(showToast: false)) {
@@ -221,11 +208,21 @@ class _AddServerBottomSheetState extends State<AddServerBottomSheet> {
       return;
     }
 
-    // 保存服务器信息
     final serverId =
         await DatabaseService.to.database.serverDao.insertServer(_server!);
 
-    // 提示信息
+    // 同步服务器信息到PreferencesStorage，确保CoreService能正确加载
+    try {
+      final userStorage = Get.find<UserStorage>();
+      userStorage.serverId.value = serverId;
+      userStorage.serverUrl.value = _server!.url;
+      userStorage.username.value = _server!.username;
+      userStorage.password.value = _server!.password;
+      print('✓ Server info synced to UserStorage: ${_server!.url}');
+    } catch (e) {
+      print('⚠ Error syncing server info to UserStorage: $e');
+    }
+
     SmartDialog.dismiss();
     SmartDialog.showToast('toast_save_success'.tr);
     Get.back(
@@ -239,7 +236,6 @@ class _AddServerBottomSheetState extends State<AddServerBottomSheet> {
     );
   }
 
-  /// 构建导航栏
   CupertinoNavigationBar _buildNavigationBar() {
     return CupertinoNavigationBar(
       backgroundColor: CommonUtils.backgroundColor,
@@ -327,9 +323,3 @@ class _AddServerBottomSheetState extends State<AddServerBottomSheet> {
     );
   }
 }
-
-// Before
-// SomeWidget(child: someChild, otherProperty: someValue);
-
-// After
-// SomeWidget(otherProperty: someValue, child: someChild);

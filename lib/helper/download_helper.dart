@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:get/get.dart';
 import 'package:path_provider/path_provider.dart';
-// import 'package:flutter_downloader/flutter_downloader.dart';
+import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
@@ -58,7 +58,7 @@ class DownloadHelper {
           object.rawUrl!,
           options: Options(
             responseType: ResponseType.bytes,
-            headers: DriverHelper.getHeaders(object.provider, object.rawUrl),
+            headers: DriverHelper.getWebDAVHeaders(),
           ),
         );
 
@@ -75,24 +75,24 @@ class DownloadHelper {
       }
 
       // 添加到下载列表
-      // final taskId = await FlutterDownloader.enqueue(
-      //   url: object.rawUrl ?? '',
-      //   headers: DriverHelper.getHeaders(object.provider, object.rawUrl),
-      //   savedDir: await getDownloadPath(path),
-      //   showNotification: false,
-      // );
+      final taskId = await FlutterDownloader.enqueue(
+        url: object.rawUrl ?? '',
+        headers: DriverHelper.getHeaders(object.provider, object.rawUrl),
+        savedDir: await getDownloadPath(path),
+        showNotification: false,
+      );
 
-      // // 添加到数据库
-      // await DatabaseService.to.database.downloadDao.insertDownload(
-      //   DownloadEntity(
-      //     serverId: serverId,
-      //     path: path,
-      //     name: name,
-      //     taskId: taskId!,
-      //     type: type,
-      //     size: size,
-      //   ),
-      // );
+      // 添加到数据库
+      await DatabaseService.to.database.downloadDao.insertDownload(
+        DownloadEntity(
+          serverId: serverId,
+          path: path,
+          name: name,
+          taskId: taskId!,
+          type: type,
+          size: size,
+        ),
+      );
 
       SmartDialog.showToast('toast_download_add_success'.tr);
       SmartDialog.dismiss();

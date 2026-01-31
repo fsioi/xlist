@@ -115,21 +115,23 @@ class CommonUtils {
     required ObjectModel object,
     required UserModel userInfo,
   }) {
-    String encodePath = '';
-    final basePath = userInfo.basePath;
-    final serverUrl = Get.find<UserStorage>().serverUrl.value;
+    final currentServer = Get.find<CoreService>().currentServer.value;
+    final serverUrl = currentServer?.url ?? '';
+    final username = currentServer?.username ?? '';
+    final password = currentServer?.password ?? '';
 
-    // encode path
+    if (object.rawUrl != null && object.rawUrl!.isNotEmpty) {
+      return object.rawUrl!;
+    }
+
+    String encodePath = '';
+    final basePath = userInfo.basePath ?? '';
+
     '${basePath}${path}${object.name}'.split('/').forEach((v) {
       if (v.isNotEmpty) encodePath += '/${Uri.encodeComponent(v)}';
     });
 
-    // 获取签名
-    final sign = (object.sign != null && object.sign!.isNotEmpty)
-        ? '?sign=${object.sign}'
-        : '';
-
-    return '${serverUrl}/d${encodePath}${sign}';
+    return '${serverUrl}${encodePath}';
   }
 
   /// 排序对象列表

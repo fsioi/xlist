@@ -252,9 +252,13 @@ class SettingPage extends GetView<SettingController> {
                     onTap: () async {
                       try {
                         SmartDialog.showLoading();
+                        // 计算清除前的缓存大小
+                        final beforeSize = await ThumbnailCache().getCacheSize();
                         await ThumbnailCache().clearCache();
                         SmartDialog.dismiss();
-                        Get.snackbar('成功', '缓存已清除');
+                        // 格式化大小显示
+                        final sizeText = CommonUtils.formatFileSize(beforeSize);
+                        Get.snackbar('成功', '已清除缓存 $sizeText');
                       } catch (e) {
                         SmartDialog.dismiss();
                         Get.snackbar('错误', '清除缓存失败: $e');
