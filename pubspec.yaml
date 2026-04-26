@@ -51,7 +51,7 @@ dependencies:
   permission_handler: ^12.0.1
   modal_bottom_sheet: ^3.0.0
   image_gallery_saver_plus: ^4.0.1
-  font_awesome_flutter: ^10.12.0
+  font_awesome_flutter: ^11.0.0
   cached_network_image: ^3.3.1
   subtitle_wrapper_package: ^2.2.0
   syncfusion_flutter_pdfviewer: ^32.1.25
